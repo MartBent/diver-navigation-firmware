@@ -1,0 +1,6 @@
+[submodule "components/lvgl"]
+	path = components/lvgl
+	url = https://github.com/lvgl/lvgl.git
+[submodule "components/lmic"]
+	path = components/lmic
+	url = https://github.com/TobleMiner/lmic-esp-idf
