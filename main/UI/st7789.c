@@ -232,9 +232,6 @@ void lcdInit(TFT_t * dev, int width, int height, int offsetx, int offsety)
 	spi_master_write_data_byte(dev, 0x00);
 	spi_master_write_data_byte(dev, 0xF0);
 
-	spi_master_write_command(dev, 0x21);	//Display Inversion On
-	delayMS(10);
-
 	spi_master_write_command(dev, 0x13);	//Normal Display Mode On
 	delayMS(10);
 
