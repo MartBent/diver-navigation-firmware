@@ -51,7 +51,6 @@ static int counter = 0;
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
   uint16_t c;
-
   for (int y = area->y1; y <= area->y2; y++) {
     for (int x = area->x1; x <= area->x2; x++) {
 
@@ -60,8 +59,6 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
         color_p++;
     }
   }
-  
-  //lcdDrawMultiPixels(&dev, area->x1, area->x2, size, &color_p->full);
   lv_disp_flush_ready(disp);
 }
 
@@ -76,7 +73,7 @@ static void loraTask(void *pvParameter)
     }
 
     uint8_t data[128] = {};
-    uint8_t len = lora_receive(data);
+    lora_receive(data);
     printf((char*)data);
     vTaskDelay(8000 / portTICK_PERIOD_MS);
   }
@@ -162,7 +159,6 @@ void app_main()
   xTaskCreate(gpioHandler, "isr", 2048, NULL, 5, &ISR);
 
   while (1) {
-    lv_label_set_text_fmt(message_screen->label, "Test %d", counter);
     lv_task_handler();
     lv_tick_inc(10);
     vTaskDelay(10 / portTICK_PERIOD_MS);

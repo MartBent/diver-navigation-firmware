@@ -45,12 +45,23 @@ MessageScreen* createMessageScreen() {
     MessageScreen* message_screen = malloc(sizeof(MessageScreen));
     message_screen->root = lv_obj_create(NULL, NULL);
     message_screen->label = lv_label_create(message_screen->root, NULL);
+    lv_label_set_text(message_screen->label, "Messages screen");
     return message_screen;
 }
 
 ConfigScreen* createConfigScreen() {
     ConfigScreen* config_screen = malloc(sizeof(ConfigScreen));
     config_screen->root = lv_obj_create(NULL, NULL);
+
+    config_screen->btn_up  = getButton(config_screen->root, "/\\", LV_COLOR_YELLOW);
+    lv_obj_align(config_screen->btn_up, NULL, LV_ALIGN_IN_TOP_LEFT, 8, 3);
+
+    config_screen->btn_down  = getButton(config_screen->root, "\\/", LV_COLOR_BLUE);
+    lv_obj_align(config_screen->btn_down, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 8, 0);
+
     config_screen->label = lv_label_create(config_screen->root, NULL);
+    lv_label_set_text(config_screen->label, "Config screen");
+    lv_obj_align(config_screen->label, NULL, LV_ALIGN_CENTER, 0, 0);
+
     return config_screen;
 }

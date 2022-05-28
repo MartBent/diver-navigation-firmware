@@ -17,6 +17,8 @@ typedef struct {
 typedef struct  {
     lv_obj_t* root;
     lv_obj_t* label;
+    lv_obj_t* btn_up;
+    lv_obj_t* btn_down;
 } ConfigScreen;
 
 lv_obj_t* getButton(lv_obj_t* parent, char* text, lv_color_t color);
