@@ -13,9 +13,8 @@
 #include "driver/uart.h"
 #include "lvgl.h"
 #include "UI/st7789.h"
-#include "UI/image.c"
-#include "UI/font.c"
 #include "Lora/Lora.h"
+#include "UI/screens.h"
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
@@ -39,14 +38,14 @@ static lv_disp_buf_t disp_buf;
 static lv_color_t buf[LV_HOR_RES_MAX * 10];
 static TFT_t dev;
 
-static lv_obj_t* lbl_screen;
-static lv_obj_t* lbl;
-
-static lv_obj_t* map_screen;
-static lv_obj_t* map;
+static MessageScreen* message_screen;
+static MapScreen* map_screen;
+static ConfigScreen* config_screen;
 
 static uint8_t bufferedData[128] = {};
 static uint8_t bufferedDataLenth = 0;
+
+static int counter = 0;
 
 //A function that is passed to the LVGL driver to edit the display.
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -83,23 +82,6 @@ static void loraTask(void *pvParameter)
   }
 }
 
-lv_obj_t* getButton(char* text, lv_color_t color) {
-
-  lv_obj_t* bkgrnd = lv_obj_create(map_screen, NULL);
-  lv_obj_set_width(bkgrnd, 40);
-	lv_obj_set_height(bkgrnd, 20);
-	lv_obj_t* label = lv_label_create(bkgrnd, NULL);
-	lv_label_set_text(label, text);
-  
-	lv_obj_set_style_local_text_color(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK );
-  lv_obj_set_style_local_text_font(label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_8);
-	lv_obj_set_style_local_bg_color(bkgrnd, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, color);
-  lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
-  return bkgrnd;
-}
-
-static int counter = 0;
-
 //Sets up the screen, implemented for the ESP32 TDisplay board.
 void setup_lv() {
   lv_init();
@@ -115,7 +97,7 @@ void setup_lv() {
 
   lv_disp_buf_init(&disp_buf, buf, NULL, LV_HOR_RES_MAX * 10);
 
-  /*Initialize the display*/
+  //Display creation
   lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
   disp_drv.hor_res = 128;
@@ -127,29 +109,11 @@ void setup_lv() {
   lv_disp_drv_register(&disp_drv);
   lv_disp_set_rotation(NULL, 315);
 
-  map_screen = lv_obj_create(NULL, NULL);
-  lbl_screen = lv_obj_create(NULL, NULL);
+  map_screen = createMapScreen();
+  message_screen = createMessageScreen();
+  config_screen = createConfigScreen();
 
-  lbl = lv_label_create(lbl_screen, NULL);
-  lv_label_set_text_fmt(lbl, "Test %d", counter);
-
-  map = lv_img_create(map_screen, NULL);
-  lv_img_set_src(map, &hilgelo);
-  lv_obj_align(map, NULL, LV_ALIGN_CENTER, 0, 30);
-
-  lv_obj_t* button = getButton("OK", LV_COLOR_GREEN);
-  lv_obj_align(button, NULL, LV_ALIGN_IN_TOP_LEFT, 3, 3);
-
-  lv_obj_t* button2 = getButton("Call", LV_COLOR_RED);
-  lv_obj_align(button2, NULL, LV_ALIGN_IN_TOP_LEFT, 43, 3);
-
-  lv_obj_t* button3 = getButton("Settings", LV_COLOR_BLUE);
-  lv_obj_align(button3, NULL, LV_ALIGN_IN_TOP_LEFT, 83, 3);
-
-  lv_obj_t* button4 = getButton("Messaging", LV_COLOR_YELLOW);
-  lv_obj_align(button4, NULL, LV_ALIGN_IN_TOP_LEFT, 123, 3);
-
-  lv_scr_load(lbl_screen);
+  lv_scr_load(message_screen->root);
 
   lv_task_handler();
   lv_tick_inc(20);
@@ -167,13 +131,17 @@ void gpioHandler(void* arg)
     vTaskSuspend(ISR);
     printf("Press");
 
-    if(lv_scr_act() == map_screen) {
-      lv_scr_load(lbl_screen);
-    } else {
-      lv_scr_load(map_screen);
+    if(lv_scr_act() == map_screen->root) {
+      lv_scr_load(message_screen->root);
+    } else if(lv_scr_act() == message_screen->root) {
+      lv_scr_load(config_screen->root);
     }
+    else if(lv_scr_act() == config_screen->root) {
+      lv_scr_load(map_screen->root);
+    }
+
+    vTaskDelay(300 / portTICK_PERIOD_MS);
   }
-  
 }
 
 void app_main()
@@ -194,7 +162,7 @@ void app_main()
   xTaskCreate(gpioHandler, "isr", 2048, NULL, 5, &ISR);
 
   while (1) {
-    lv_label_set_text_fmt(lbl, "Test %d", counter);
+    lv_label_set_text_fmt(message_screen->label, "Test %d", counter);
     lv_task_handler();
     lv_tick_inc(10);
     vTaskDelay(10 / portTICK_PERIOD_MS);
@@ -220,7 +188,6 @@ static void guiTask(void *pvParameter)
 {
   (void) pvParameter;
   while (1) {
-    lv_label_set_text_fmt(lbl, "Test %d", ++counter);
     lv_task_handler();
     lv_tick_inc(10);
     vTaskDelay( 10 / portTICK_PERIOD_MS);
