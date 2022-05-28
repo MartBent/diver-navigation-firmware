@@ -20,15 +20,6 @@ void setup_lora() {
   QueueHandle_t uart_queue;
   
   ESP_ERROR_CHECK(uart_driver_install(uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
-
-  while(1) {;
-    uint8_t data[128] = {};
-    int length = 0;
-    ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&length));
-    length = uart_read_bytes(uart_num, data, length, 100);
-    printf((char*)data);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
 }
 
 void lora_send(uint8_t* tx_data, uint8_t length) {
@@ -38,6 +29,8 @@ void lora_send(uint8_t* tx_data, uint8_t length) {
 uint8_t lora_receive(uint8_t* rx_data) {
     int length = 0;
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&length));
-    length = uart_read_bytes(uart_num, rx_data, length, 100); 
+    if(length > 0) {
+      length = uart_read_bytes(uart_num, rx_data, length, 100); 
+    }
     return length;
 }

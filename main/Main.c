@@ -8,6 +8,7 @@
 #include "esp_freertos_hooks.h"
 #include "freertos/semphr.h"
 #include "esp_system.h"
+#include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
 #include "lvgl.h"
@@ -16,7 +17,7 @@
 #include "UI/font.c"
 #include "Lora/Lora.h"
 
-//#define configUSE_TIME_SLICING 0
+#define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
 
 //SPI Pins
@@ -29,7 +30,7 @@
 #define SCREEN_RST 0
 #define SCREEN_BL 14
 
-#define LED 5
+#define BUTTON 27
 
 static void guiTask(void *pvParameter);
 static void loraTask(void *pvParameter);
@@ -43,6 +44,9 @@ static lv_obj_t* lbl;
 
 static lv_obj_t* map_screen;
 static lv_obj_t* map;
+
+static uint8_t bufferedData[128] = {};
+static uint8_t bufferedDataLenth = 0;
 
 //A function that is passed to the LVGL driver to edit the display.
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
@@ -66,6 +70,12 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 static void loraTask(void *pvParameter)
 {
   while(1) {
+    printf("Lora");
+    if(bufferedDataLenth > 0) {
+      lora_send(bufferedData, bufferedDataLenth);
+      bufferedDataLenth = 0;
+    }
+
     uint8_t data[128] = {};
     uint8_t len = lora_receive(data);
     printf((char*)data);
@@ -87,6 +97,8 @@ lv_obj_t* getButton(char* text, lv_color_t color) {
   lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
   return bkgrnd;
 }
+
+static int counter = 0;
 
 //Sets up the screen, implemented for the ESP32 TDisplay board.
 void setup_lv() {
@@ -111,10 +123,16 @@ void setup_lv() {
   disp_drv.sw_rotate = true;
   disp_drv.flush_cb = my_disp_flush;
   disp_drv.buffer = &disp_buf;
+  
   lv_disp_drv_register(&disp_drv);
   lv_disp_set_rotation(NULL, 315);
 
   map_screen = lv_obj_create(NULL, NULL);
+  lbl_screen = lv_obj_create(NULL, NULL);
+
+  lbl = lv_label_create(lbl_screen, NULL);
+  lv_label_set_text_fmt(lbl, "Test %d", counter);
+
   map = lv_img_create(map_screen, NULL);
   lv_img_set_src(map, &hilgelo);
   lv_obj_align(map, NULL, LV_ALIGN_CENTER, 0, 30);
@@ -131,23 +149,70 @@ void setup_lv() {
   lv_obj_t* button4 = getButton("Messaging", LV_COLOR_YELLOW);
   lv_obj_align(button4, NULL, LV_ALIGN_IN_TOP_LEFT, 123, 3);
 
-  lv_scr_load(map_screen);
+  lv_scr_load(lbl_screen);
 
   lv_task_handler();
   lv_tick_inc(20);
 }
 
+TaskHandle_t ISR = NULL;
+
+void IRAM_ATTR button_isr(void* arg) {
+  vTaskResume(ISR);
+}
+
+void gpioHandler(void* arg)
+{
+  while(1) {
+    vTaskSuspend(ISR);
+    printf("Press");
+
+    if(lv_scr_act() == map_screen) {
+      lv_scr_load(lbl_screen);
+    } else {
+      lv_scr_load(map_screen);
+    }
+  }
+  
+}
+
 void app_main()
 {
-  gpio_reset_pin( LED );
-  gpio_set_direction( LED, GPIO_MODE_OUTPUT );
-  gpio_set_level( LED, 0 );
+  gpio_pad_select_gpio(BUTTON);
+	gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BUTTON, GPIO_PULLUP_ONLY);
+	gpio_set_intr_type(BUTTON, GPIO_INTR_NEGEDGE);
 
   setup_lv();
   setup_lora();
 
-  xTaskCreate(guiTask, "gui", 2048, NULL, 5, NULL);
-  xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
+  gpio_intr_enable(BUTTON);
+  gpio_install_isr_service(0);
+
+  gpio_isr_handler_add(BUTTON, button_isr, NULL);
+
+  xTaskCreate(gpioHandler, "isr", 2048, NULL, 5, &ISR);
+
+  while (1) {
+    lv_label_set_text_fmt(lbl, "Test %d", counter);
+    lv_task_handler();
+    lv_tick_inc(10);
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+
+    if(bufferedDataLenth > 0) {
+      lora_send(bufferedData, bufferedDataLenth);
+      bufferedDataLenth = 0;
+    }
+
+    uint8_t data[128] = {};
+    uint8_t len = lora_receive(data);
+    if(len > 0) {
+      printf((char*)data);
+    }
+  }
+
+  //xTaskCreate(guiTask, "gui", 2048, NULL, 5, NULL);
+  //xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
 }
 
 //Task for refreshing the display with new data.
@@ -155,7 +220,7 @@ static void guiTask(void *pvParameter)
 {
   (void) pvParameter;
   while (1) {
-    printf("UI\n");
+    lv_label_set_text_fmt(lbl, "Test %d", ++counter);
     lv_task_handler();
     lv_tick_inc(10);
     vTaskDelay( 10 / portTICK_PERIOD_MS);
