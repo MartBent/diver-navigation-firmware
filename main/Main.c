@@ -50,15 +50,13 @@ static int counter = 0;
 //A function that is passed to the LVGL driver to edit the display.
 void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
-  uint16_t c;
-  for (int y = area->y1; y <= area->y2; y++) {
-    for (int x = area->x1; x <= area->x2; x++) {
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
+  uint32_t wh = w*h;
 
-        c = color_p->full;
-        lcdDrawPixel(&dev, x, y, c);
-        color_p++;
-    }
-  }
+  lcdSetAddrWindow(&dev, area->x1, area->y1, area->x2, area->y2);
+  uint32_t offset = 0;
+  while (wh--) lcdPushColor(&dev, color_p++->full);
   lv_disp_flush_ready(disp);
 }
 

@@ -24,7 +24,7 @@ MapScreen* createMapScreen() {
 
     map_screen->map = lv_img_create(map_screen->root, NULL);
     lv_img_set_src(map_screen->map, &hilgelo);
-    lv_obj_align(map_screen->map, NULL, LV_ALIGN_CENTER, 0, 30);
+    lv_obj_align(map_screen->map, NULL, LV_ALIGN_CENTER, 0, 0);
 
     map_screen->btn_ok = getButton(map_screen->root, "OK", LV_COLOR_GREEN);
     lv_obj_align(map_screen->btn_ok, NULL, LV_ALIGN_IN_TOP_LEFT, 3, 3);
