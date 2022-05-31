@@ -10,61 +10,29 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-#include "driver/uart.h"
-#include "lvgl.h"
-#include "UI/st7789.h"
-#include "Lora/Lora.h"
-#include "UI/screens.h"
+
+
+#include "Lora/Lora.c"
+#include "UI/display.c"
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
 
-//SPI Pins
-#define SCREEN_MOSI 23
-#define SCREEN_SCK 18
-
-//GPIO
-#define SCREEN_CS 25
-#define SCREEN_DC 26
-#define SCREEN_RST 0
-#define SCREEN_BL 14
-
 #define BUTTON 27
+
+static TaskHandle_t button1_task_handle = NULL;
+// static TaskHandle_t button2_task_handle = NULL;
+// static TaskHandle_t button3_task_handle = NULL;
+// static TaskHandle_t button4_task_handle = NULL;
 
 static void guiTask(void *pvParameter);
 static void loraTask(void *pvParameter);
-
-static lv_disp_buf_t disp_buf;
-static lv_color_t buf[LV_HOR_RES_MAX * 10];
-static TFT_t dev;
-
-static MessageScreen* message_screen;
-static MapScreen* map_screen;
-static ConfigScreen* config_screen;
-
-static uint8_t bufferedData[128] = {};
-static uint8_t bufferedDataLenth = 0;
-
-static int counter = 0;
-
-//A function that is passed to the LVGL driver to edit the display.
-void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
-{
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-  uint32_t wh = w*h;
-
-  lcdSetAddrWindow(&dev, area->x1, area->y1, area->x2, area->y2);
-  uint32_t offset = 0;
-  while (wh--) lcdPushColor(&dev, color_p++->full);
-  lv_disp_flush_ready(disp);
-}
 
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
 {
   while(1) {
-    printf("Lora");
+    printf("Lora\n");
     if(bufferedDataLenth > 0) {
       lora_send(bufferedData, bufferedDataLenth);
       bufferedDataLenth = 0;
@@ -77,64 +45,135 @@ static void loraTask(void *pvParameter)
   }
 }
 
-//Sets up the screen, implemented for the ESP32 TDisplay board.
-void setup_lv() {
-  lv_init();
-
-  //Mosi, Sclk, cs, rst, backlight, touchscreen stuff,
-  spi_master_init(&dev, SCREEN_MOSI, SCREEN_SCK, SCREEN_CS, SCREEN_DC, SCREEN_RST, SCREEN_BL);
-  int width = 128;
-  int height = 160;
-  int xoffset = 0;
-  int yoffset = 0;
-
-  lcdInit(&dev, width, height, xoffset, yoffset);
-
-  lv_disp_buf_init(&disp_buf, buf, NULL, LV_HOR_RES_MAX * 10);
-
-  //Display creation
-  lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-  disp_drv.hor_res = 128;
-  disp_drv.ver_res = 160;
-  disp_drv.sw_rotate = true;
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.buffer = &disp_buf;
-  
-  lv_disp_drv_register(&disp_drv);
-  lv_disp_set_rotation(NULL, 315);
-
-  map_screen = createMapScreen();
-  message_screen = createMessageScreen();
-  config_screen = createConfigScreen();
-
-  lv_scr_load(message_screen->root);
-
-  lv_task_handler();
-  lv_tick_inc(20);
-}
-
-TaskHandle_t ISR = NULL;
-
 void IRAM_ATTR button_isr(void* arg) {
-  vTaskResume(ISR);
+  vTaskResume(*(TaskHandle_t*)arg);
 }
 
-void gpioHandler(void* arg)
+void button1_handler(void* arg)
 {
   while(1) {
-    vTaskSuspend(ISR);
-    printf("Press");
 
-    if(lv_scr_act() == map_screen->root) {
-      lv_scr_load(message_screen->root);
-    } else if(lv_scr_act() == message_screen->root) {
-      lv_scr_load(config_screen->root);
-    }
-    else if(lv_scr_act() == config_screen->root) {
-      lv_scr_load(map_screen->root);
+    vTaskSuspend(button1_task_handle);
+    switch(getCurrentScreen()) {
+      case MAP_SCREEN: {
+        handleMapScreenButton(1);
+        break;
+      }
+      case CONFIG_SCREEN: {
+        handleConfigScreenButton(1);
+        break;
+      }
+      case MENU_SCREEN: {
+        handleMenuScreenButton(1);
+        break;
+      }
+      case MESSAGE_SCREEN: {
+        handleMessageScreenButton(1);
+        break;
+      }
+      case STATS_SCREEN: {
+        handleConfigScreenButton(1);
+        break;
+      }
     }
 
+    //Delay for debounce
+    vTaskDelay(300 / portTICK_PERIOD_MS);
+  }
+}
+
+void button2_handler(void* arg)
+{
+  while(1) {
+    vTaskSuspend(button1_task_handle);
+    switch(getCurrentScreen()) {
+      case MAP_SCREEN: {
+        handleMapScreenButton(2);
+        break;
+      }
+      case CONFIG_SCREEN: {
+        handleConfigScreenButton(2);
+        break;
+      }
+      case MENU_SCREEN: {
+        handleMenuScreenButton(2);
+        break;
+      }
+      case MESSAGE_SCREEN: {
+        handleMessageScreenButton(2);
+        break;
+      }
+      case STATS_SCREEN: {
+        handleConfigScreenButton(2);
+        break;
+      }
+    }
+
+    //Delay for debounce
+    vTaskDelay(300 / portTICK_PERIOD_MS);
+  }
+}
+
+void button3_handler(void* arg)
+{
+  while(1) {
+    vTaskSuspend(button1_task_handle);
+    switch(getCurrentScreen()) {
+      case MAP_SCREEN: {
+        handleMapScreenButton(3);
+        break;
+      }
+      case CONFIG_SCREEN: {
+        handleConfigScreenButton(3);
+        break;
+      }
+      case MENU_SCREEN: {
+        handleMenuScreenButton(3);
+        break;
+      }
+      case MESSAGE_SCREEN: {
+        handleMessageScreenButton(3);
+        break;
+      }
+      case STATS_SCREEN: {
+        handleConfigScreenButton(3);
+        break;
+      }
+    }
+
+    //Delay for debounce
+    vTaskDelay(300 / portTICK_PERIOD_MS);
+  }
+}
+
+void button4_handler(void* arg)
+{
+  while(1) {
+    vTaskSuspend(button1_task_handle);
+    switch(getCurrentScreen()) {
+      case MAP_SCREEN: {
+        handleMapScreenButton(4);
+        break;
+      }
+      case CONFIG_SCREEN: {
+        handleConfigScreenButton(4);
+        break;
+      }
+      case MENU_SCREEN: {
+        handleMenuScreenButton(4);
+        break;
+      }
+      case MESSAGE_SCREEN: {
+        handleMessageScreenButton(4);
+        break;
+      }
+      case STATS_SCREEN: {
+        handleConfigScreenButton(4);
+        break;
+      }
+    }
+
+    //Delay for debounce
     vTaskDelay(300 / portTICK_PERIOD_MS);
   }
 }
@@ -152,29 +191,18 @@ void app_main()
   gpio_intr_enable(BUTTON);
   gpio_install_isr_service(0);
 
-  gpio_isr_handler_add(BUTTON, button_isr, NULL);
+  gpio_isr_handler_add(BUTTON, button_isr, &button1_task_handle);
+  //gpio_isr_handler_add(BUTTON, button_isr, &button2_task_handle);
+  //gpio_isr_handler_add(BUTTON, button_isr, &button3_task_handle);
+  //gpio_isr_handler_add(BUTTON, button_isr, &button4_task_handle);
 
-  xTaskCreate(gpioHandler, "isr", 2048, NULL, 5, &ISR);
+  xTaskCreate(button1_handler, "button 1 isr", 2048, NULL, 5, &button1_task_handle);
+  //xTaskCreate(button2_handler, "button 2 isr", 2048, NULL, 5, &button2_task_handle);
+  //xTaskCreate(button3_handler, "button 3 isr", 2048, NULL, 5, &button3_task_handle);
+  //xTaskCreate(button4_handler, "button 4 isr", 2048, NULL, 5, &button4_task_handle);
 
-  while (1) {
-    lv_task_handler();
-    lv_tick_inc(10);
-    vTaskDelay(10 / portTICK_PERIOD_MS);
-
-    if(bufferedDataLenth > 0) {
-      lora_send(bufferedData, bufferedDataLenth);
-      bufferedDataLenth = 0;
-    }
-
-    uint8_t data[128] = {};
-    uint8_t len = lora_receive(data);
-    if(len > 0) {
-      printf((char*)data);
-    }
-  }
-
-  //xTaskCreate(guiTask, "gui", 2048, NULL, 5, NULL);
-  //xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
+  xTaskCreate(guiTask, "gui", 2048, NULL, 1, NULL);
+  xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
 }
 
 //Task for refreshing the display with new data.
@@ -182,6 +210,7 @@ static void guiTask(void *pvParameter)
 {
   (void) pvParameter;
   while (1) {
+    printf("UI\n");
     lv_task_handler();
     lv_tick_inc(10);
     vTaskDelay( 10 / portTICK_PERIOD_MS);

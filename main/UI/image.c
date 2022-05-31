@@ -1,3 +1,6 @@
+#ifndef IMAGE_C
+#define IMAGE_C
+
 #if defined(LV_LVGL_H_INCLUDE_SIMPLE)
 #include "lvgl.h"
 #else
@@ -549,3 +552,5 @@ const lv_img_dsc_t hilgelo = {
   .data_size = 20480 * LV_COLOR_SIZE / 8,
   .data = hilgelo_map,
 };
+
+#endif

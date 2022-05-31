@@ -1,13 +1,3 @@
-#include <string.h>
-#include <math.h>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-#include <driver/spi_master.h>
-#include <driver/gpio.h>
-#include "esp_log.h"
-
 #include "st7789.h"
 
 #define TAG "ST7789"
@@ -190,7 +180,7 @@ void lcdInit(TFT_t * dev, int width, int height, int offsetx, int offsety)
 	dev->_height = height;
 	dev->_offsetx = offsetx;
 	dev->_offsety = offsety;
-	dev->_font_direction = DIRECTION0;
+	dev->_font_direction = 0;
 	dev->_font_fill = false;
 	dev->_font_underline = false;
 
@@ -266,9 +256,7 @@ void lcdPushColor(TFT_t* dev, uint16_t color) {
 void lcdDrawMultiPixels(TFT_t * dev, uint16_t x, uint16_t y, uint16_t size, uint16_t * colors) {
 
 	uint16_t _x1 = x + dev->_offsetx;
-	uint16_t _x2 = _x1 + size;
-	uint16_t _y1 = y + dev->_offsety;
-	uint16_t _y2 = _y1;
+	uint16_t _y2 = y + dev->_offsety;
 
 	spi_master_write_command(dev, 0x2A);	// set column(x) address
 	spi_master_write_data_byte(dev,  0x00);

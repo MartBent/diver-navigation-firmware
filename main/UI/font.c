@@ -1,3 +1,6 @@
+#ifndef FONT_C
+#define FONT_C
+
 #include "lvgl.h"
 
 /*******************************************************************************
@@ -1396,3 +1399,4 @@ lv_font_t lv_font_montserrat_8 = {
 #endif
     .dsc = &font_dsc           /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
 };
+#endif
