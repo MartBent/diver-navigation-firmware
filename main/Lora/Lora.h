@@ -1,3 +1,6 @@
+#ifndef LORA_H
+#define LORA_H
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,5 +13,8 @@ static uint8_t bufferedData[128] = {};
 static uint8_t bufferedDataLenth = 0;
 
 void setup_lora();
-void lora_send(uint8_t* tx_data, uint8_t length);
+void lora_send_bytes(uint8_t* tx_data, uint8_t length);
+void lora_send_chars(char* tx_data, uint8_t length);
 uint8_t lora_receive(uint8_t* rx_data);
+
+#endif

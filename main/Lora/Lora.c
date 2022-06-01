@@ -1,3 +1,6 @@
+#ifndef LORA_C
+#define LORA_C
+
 #include "Lora.h"
 
 void setup_lora() {
@@ -22,7 +25,11 @@ void setup_lora() {
   ESP_ERROR_CHECK(uart_driver_install(uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
 }
 
-void lora_send(uint8_t* tx_data, uint8_t length) {
+void lora_send_bytes(uint8_t* tx_data, uint8_t length) {
+    uart_write_bytes(uart_num, tx_data, length);
+}
+
+void lora_send_chars(char* tx_data, uint8_t length) {
     uart_write_bytes(uart_num, tx_data, length);
 }
 
@@ -34,3 +41,5 @@ uint8_t lora_receive(uint8_t* rx_data) {
     }
     return length;
 }
+
+#endif

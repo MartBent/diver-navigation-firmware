@@ -14,16 +14,18 @@
 
 #include "Lora/Lora.c"
 #include "UI/display.c"
+#include "UI/screens/screens.c"
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
 
-#define BUTTON 27
+#define BUTTON1 27
+#define BUTTON2 19
 
 static TaskHandle_t button1_task_handle = NULL;
-// static TaskHandle_t button2_task_handle = NULL;
-// static TaskHandle_t button3_task_handle = NULL;
-// static TaskHandle_t button4_task_handle = NULL;
+static TaskHandle_t button2_task_handle = NULL;
+static TaskHandle_t button3_task_handle = NULL;
+static TaskHandle_t button4_task_handle = NULL;
 
 static void guiTask(void *pvParameter);
 static void loraTask(void *pvParameter);
@@ -34,7 +36,7 @@ static void loraTask(void *pvParameter)
   while(1) {
     printf("Lora\n");
     if(bufferedDataLenth > 0) {
-      lora_send(bufferedData, bufferedDataLenth);
+      lora_send_bytes(bufferedData, bufferedDataLenth);
       bufferedDataLenth = 0;
     }
 
@@ -85,7 +87,7 @@ void button1_handler(void* arg)
 void button2_handler(void* arg)
 {
   while(1) {
-    vTaskSuspend(button1_task_handle);
+    vTaskSuspend(button2_task_handle);
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(2);
@@ -117,7 +119,7 @@ void button2_handler(void* arg)
 void button3_handler(void* arg)
 {
   while(1) {
-    vTaskSuspend(button1_task_handle);
+    vTaskSuspend(button3_task_handle);
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(3);
@@ -149,7 +151,7 @@ void button3_handler(void* arg)
 void button4_handler(void* arg)
 {
   while(1) {
-    vTaskSuspend(button1_task_handle);
+    vTaskSuspend(button4_task_handle);
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(4);
@@ -180,24 +182,34 @@ void button4_handler(void* arg)
 
 void app_main()
 {
-  gpio_pad_select_gpio(BUTTON);
-	gpio_set_direction(BUTTON, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(BUTTON, GPIO_PULLUP_ONLY);
-	gpio_set_intr_type(BUTTON, GPIO_INTR_NEGEDGE);
+  gpio_pad_select_gpio(BUTTON1);
+	gpio_set_direction(BUTTON1, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BUTTON1, GPIO_PULLUP_ONLY);
+	gpio_set_intr_type(BUTTON1, GPIO_INTR_NEGEDGE);
+
+  gpio_pad_select_gpio(BUTTON2);
+	gpio_set_direction(BUTTON2, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BUTTON2, GPIO_PULLUP_ONLY);
+	gpio_set_intr_type(BUTTON2, GPIO_INTR_NEGEDGE);
 
   setup_lv();
+
+  initScreens();
+
   setup_lora();
 
-  gpio_intr_enable(BUTTON);
+  gpio_intr_enable(BUTTON1);
+  gpio_intr_enable(BUTTON2);
+
   gpio_install_isr_service(0);
 
-  gpio_isr_handler_add(BUTTON, button_isr, &button1_task_handle);
-  //gpio_isr_handler_add(BUTTON, button_isr, &button2_task_handle);
+  gpio_isr_handler_add(BUTTON1, button_isr, &button1_task_handle);
+  gpio_isr_handler_add(BUTTON2, button_isr, &button2_task_handle);
   //gpio_isr_handler_add(BUTTON, button_isr, &button3_task_handle);
   //gpio_isr_handler_add(BUTTON, button_isr, &button4_task_handle);
 
   xTaskCreate(button1_handler, "button 1 isr", 2048, NULL, 5, &button1_task_handle);
-  //xTaskCreate(button2_handler, "button 2 isr", 2048, NULL, 5, &button2_task_handle);
+  xTaskCreate(button2_handler, "button 2 isr", 2048, NULL, 5, &button2_task_handle);
   //xTaskCreate(button3_handler, "button 3 isr", 2048, NULL, 5, &button3_task_handle);
   //xTaskCreate(button4_handler, "button 4 isr", 2048, NULL, 5, &button4_task_handle);
 
