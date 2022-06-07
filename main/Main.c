@@ -35,15 +35,33 @@ static void loraTask(void *pvParameter)
 {
   while(1) {
     printf("Lora\n");
-    if(bufferedDataLenth > 0) {
-      lora_send_bytes(bufferedData, bufferedDataLenth);
-      bufferedDataLenth = 0;
-    }
-
     uint8_t data[128] = {};
-    lora_receive(data);
-    printf((char*)data);
+    uint8_t length = lora_receive(data);
+    if(length > 2) {
+      switch(data[0]) {
+        case 0: {
+          CommunicationMessage* msg = decodeCommMessage(data, length);
+          processCommunicationMessage(msg);
+          break;
+        }
+      }
+    }
     vTaskDelay(8000 / portTICK_PERIOD_MS);
+  }
+}
+
+//For showing the time on the menu screen
+static void statsTask(void* pvParameter) {
+  static uint8_t seconds = 0;
+  static uint64_t minutes = 0;
+  while(1) {
+    ++seconds;
+    if(seconds >= 60) {
+      seconds = 0;
+      ++minutes;
+    }
+    lv_label_set_text_fmt(menu_screen->lbl_time, "Time: %lld:%d", minutes, seconds);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -51,13 +69,14 @@ static void loraTask(void *pvParameter)
 static void guiTask(void *pvParameter)
 {
   (void) pvParameter;
+
   while (1) {
 
     //Disable button interrupts when refreshing the screen
     gpio_intr_disable(BUTTON1);
     gpio_intr_disable(BUTTON2);
-    //gpio_intr_disable(BUTTON3);
-    //gpio_intr_disable(BUTTON4);
+    gpio_intr_disable(BUTTON3);
+    gpio_intr_disable(BUTTON4);
 
     printf("UI\n");
     lv_task_handler();
@@ -66,8 +85,8 @@ static void guiTask(void *pvParameter)
     //Reanable
     gpio_intr_enable(BUTTON1);
     gpio_intr_enable(BUTTON2);
-    //gpio_intr_enable(BUTTON3);
-    //gpio_intr_enable(BUTTON4);
+    gpio_intr_enable(BUTTON3);
+    gpio_intr_enable(BUTTON4);
     vTaskDelay( 10 / portTICK_PERIOD_MS);
   }
 } 
@@ -259,4 +278,5 @@ void app_main()
   //Start the periodic tasks
   xTaskCreate(guiTask, "gui", 2048, NULL, 1, NULL);
   xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
+  xTaskCreate(statsTask, "stats", 2048, NULL, 5, NULL);
 }

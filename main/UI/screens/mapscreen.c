@@ -20,23 +20,21 @@ MapScreen* createMapScreen() {
 }
 
 void handleMapScreenButton(uint8_t button_num) {
-
-    double lati_per_pixel = 0.00005140625;
-    double long_per_pixel = 0.0000840875;
-
-    location_t location = getCurrentLocation();
-    
-    //Convert coordinates to pixel on map
-    location_t map_center = getCurrentMapCenterLocation();
-
-    double delta_lati = map_center.latitude - location.latitude;
-    double delta_long = map_center.longtitude - location.longtitude;
-
-    printf("Deltas lati: %.10f, Long: %.10f", delta_lati, delta_long);
-
-    int map_x = delta_long / long_per_pixel;
-    int map_y = delta_lati / lati_per_pixel;
-
-    printf("Adjustic marker: %d %d", map_x, map_y);
-    lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, -map_x, map_y);
+    switch (button_num) {
+      case 1: {
+          location_t loc = getCurrentMapCenterLocation();
+          uint8_t x = 0;
+          uint8_t y = 0;
+          locationToPixels(loc, &x , &y);
+          lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, -x, y);
+          break;
+        }
+      case 2:
+      case 3:
+        break;
+      case 4: {
+          lv_scr_load(menu_screen->root);
+          break;
+        }
+    }
 }

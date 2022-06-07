@@ -7,6 +7,9 @@ typedef struct {
     lv_obj_t* root;
     lv_obj_t* message_box;
     lv_obj_t* message_options[5];
+    lv_obj_t* btn_up;
+    lv_obj_t* btn_down;
+    lv_obj_t* btn_clear;
     uint8_t current_option;
 } MessageScreen;
 
@@ -23,6 +26,9 @@ typedef struct  {
     lv_obj_t* btn_up;
     lv_obj_t* btn_down;
     uint8_t current_option;
+    lv_obj_t* lbl_depth;
+    lv_obj_t* lbl_battery;
+    lv_obj_t* lbl_time;
 } MenuScreen;
 
 typedef struct {
@@ -30,7 +36,6 @@ typedef struct {
     lv_obj_t* map;
     lv_obj_t* location_marker;
 } MapScreen;
-
 
 typedef struct {
     lv_obj_t* root;
@@ -46,6 +51,7 @@ uint8_t scrollMenu(uint8_t index, uint8_t size, bool isUp) {
     }
     return index;
 }
+
 static MessageScreen* message_screen;
 static MapScreen* map_screen;
 static ConfigScreen* config_screen;
@@ -93,7 +99,7 @@ void initScreens() {
   menu_screen = createMenuScreen();
   stats_screen = createStatsScreen();
 
-  lv_scr_load(message_screen->root);
+  lv_scr_load(menu_screen->root);
 }
 
 #endif

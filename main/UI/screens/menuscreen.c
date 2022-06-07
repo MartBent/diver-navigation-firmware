@@ -1,5 +1,6 @@
 #include "lvgl.h"
 #include "../font.c"
+#include "../../stats/time.c"
 
 lv_obj_t* getMenuButton(lv_obj_t* parent, char* text, lv_color_t color) {
 
@@ -23,10 +24,16 @@ MenuScreen* createMenuScreen() {
   char* options[4] = {"Map", "Messages", "Stats", "Config"};
   for(int i = 0; i < 4; i++) {
     menu_screen->menu_options[i] = getMenuButton(menu_screen->root, options[i], LV_COLOR_WHITE);
-    lv_obj_align(menu_screen->menu_options[i], NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25);
+    lv_obj_align(menu_screen->menu_options[i], NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25+10);
   }
-
   lv_obj_set_style_local_bg_color(menu_screen->menu_options[0], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_CYAN);
+
+  menu_screen->lbl_time = lv_label_create(menu_screen->root, NULL);
+  lv_label_set_text(menu_screen->lbl_time, "Time:");
+  lv_obj_align(menu_screen->lbl_time, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 35);
+
+
+
   return menu_screen;
 }
 

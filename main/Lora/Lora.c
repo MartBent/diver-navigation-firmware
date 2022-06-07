@@ -1,7 +1,31 @@
 #ifndef LORA_C
 #define LORA_C
 
-#include "Lora.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+ 
+#include "driver/uart.h"
+
+typedef struct {
+    float latitude;
+    float longitude;
+} GpsMessage;
+
+typedef struct {
+    uint8_t length;
+    char message[128];
+} CommunicationMessage;
+
+typedef struct {
+    uint8_t length;
+    uint8_t* data;
+    uint8_t index; //The map message might have to be cut into seperate messages.
+} MapMessage;
+
+static const uart_port_t uart_num = UART_NUM_2;
+
 
 void setup_lora() {
   uart_config_t uart_config = {
@@ -40,6 +64,28 @@ uint8_t lora_receive(uint8_t* rx_data) {
       length = uart_read_bytes(uart_num, rx_data, length, 100); 
     }
     return length;
+}
+
+GpsMessage* decodeGpsMessage(uint8_t* data, uint8_t length) {
+  GpsMessage* msg = malloc(sizeof(GpsMessage));
+  msg->latitude = (float)data[2];
+  msg->longitude = (float)data[1];
+  return msg;
+}
+
+CommunicationMessage* decodeCommMessage(uint8_t* data, uint8_t length) {
+  CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
+  msg->length = data[1];
+  for(int i = 0; i < msg->length; i++) {
+    msg->message[0] = data[i+2];
+  }
+  msg->message[msg->length] = '\0';
+  return msg;
+}
+
+MapMessage* decodeMapMessage(uint8_t* data, uint8_t length) {
+  MapMessage* msg = malloc(sizeof(MapMessage));
+  return msg;
 }
 
 #endif

@@ -7,5 +7,5 @@ StatsScreen* createStatsScreen() {
 }
 
 void handleStatsScreenButton(uint8_t button_num) {
-    
+  
 }
