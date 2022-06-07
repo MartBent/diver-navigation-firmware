@@ -5,7 +5,9 @@
 
 typedef struct {
     lv_obj_t* root;
-    lv_obj_t* label;
+    lv_obj_t* message_box;
+    lv_obj_t* message_options[5];
+    uint8_t current_option;
 } MessageScreen;
 
 typedef struct  {
@@ -17,7 +19,7 @@ typedef struct  {
 
 typedef struct  {
     lv_obj_t* root;
-    lv_obj_t* menuOptions[6];
+    lv_obj_t* menu_options[4];
     lv_obj_t* btn_up;
     lv_obj_t* btn_down;
     uint8_t current_option;
@@ -29,15 +31,32 @@ typedef struct {
     lv_obj_t* location_marker;
 } MapScreen;
 
+
+typedef struct {
+    lv_obj_t* root;
+    lv_obj_t* label;
+} StatsScreen;
+
+uint8_t scrollMenu(uint8_t index, uint8_t size, bool isUp) {
+    uint8_t max = size - 1;
+    uint8_t min = 0;
+    index += (isUp ? -1 : 1);
+    if(index > max) {
+      index = (isUp ? max : min);
+    }
+    return index;
+}
 static MessageScreen* message_screen;
 static MapScreen* map_screen;
 static ConfigScreen* config_screen;
 static MenuScreen* menu_screen;
+static StatsScreen* stats_screen;
 
 #include "configscreen.c"
 #include "mapscreen.c"
 #include "messagescreen.c"
 #include "menuscreen.c"
+#include "statsscreen.c"
 
 typedef enum {
     MAP_SCREEN,
@@ -60,7 +79,7 @@ screen_t getCurrentScreen() {
     if(lv_scr_act() == menu_screen->root) {
         return MENU_SCREEN;
     }
-    if(lv_scr_act() == map_screen->root) {
+    if(lv_scr_act() == stats_screen->root) {
         return STATS_SCREEN;
     }
     return MAP_SCREEN;
@@ -72,9 +91,9 @@ void initScreens() {
   message_screen = createMessageScreen();
   config_screen = createConfigScreen();
   menu_screen = createMenuScreen();
+  stats_screen = createStatsScreen();
 
-  lv_scr_load(menu_screen->root);
-
+  lv_scr_load(message_screen->root);
 }
 
 #endif

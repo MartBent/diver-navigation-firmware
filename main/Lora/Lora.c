@@ -36,7 +36,7 @@ void lora_send_chars(char* tx_data, uint8_t length) {
 uint8_t lora_receive(uint8_t* rx_data) {
     int length = 0;
     ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t*)&length));
-    if(length > 0) {
+    if(length > 0 && length < 128) {
       length = uart_read_bytes(uart_num, rx_data, length, 100); 
     }
     return length;

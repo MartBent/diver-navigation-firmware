@@ -11,24 +11,24 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 
-
 #include "Lora/Lora.c"
+
 #include "UI/display.c"
 #include "UI/screens/screens.c"
+#include "UI/image.c"
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
 
 #define BUTTON1 27
 #define BUTTON2 19
+#define BUTTON3 22
+#define BUTTON4 21
 
 static TaskHandle_t button1_task_handle = NULL;
 static TaskHandle_t button2_task_handle = NULL;
 static TaskHandle_t button3_task_handle = NULL;
 static TaskHandle_t button4_task_handle = NULL;
-
-static void guiTask(void *pvParameter);
-static void loraTask(void *pvParameter);
 
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
@@ -47,6 +47,31 @@ static void loraTask(void *pvParameter)
   }
 }
 
+//Task for refreshing the display with new data.
+static void guiTask(void *pvParameter)
+{
+  (void) pvParameter;
+  while (1) {
+
+    //Disable button interrupts when refreshing the screen
+    gpio_intr_disable(BUTTON1);
+    gpio_intr_disable(BUTTON2);
+    //gpio_intr_disable(BUTTON3);
+    //gpio_intr_disable(BUTTON4);
+
+    printf("UI\n");
+    lv_task_handler();
+    lv_tick_inc(10);
+
+    //Reanable
+    gpio_intr_enable(BUTTON1);
+    gpio_intr_enable(BUTTON2);
+    //gpio_intr_enable(BUTTON3);
+    //gpio_intr_enable(BUTTON4);
+    vTaskDelay( 10 / portTICK_PERIOD_MS);
+  }
+} 
+
 void IRAM_ATTR button_isr(void* arg) {
   vTaskResume(*(TaskHandle_t*)arg);
 }
@@ -56,6 +81,7 @@ void button1_handler(void* arg)
   while(1) {
 
     vTaskSuspend(button1_task_handle);
+    printf("Btn 1\n");
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(1);
@@ -74,7 +100,7 @@ void button1_handler(void* arg)
         break;
       }
       case STATS_SCREEN: {
-        handleConfigScreenButton(1);
+        handleStatsScreenButton(1);
         break;
       }
     }
@@ -88,6 +114,7 @@ void button2_handler(void* arg)
 {
   while(1) {
     vTaskSuspend(button2_task_handle);
+    printf("Btn 2\n");
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(2);
@@ -106,7 +133,7 @@ void button2_handler(void* arg)
         break;
       }
       case STATS_SCREEN: {
-        handleConfigScreenButton(2);
+        handleStatsScreenButton(2);
         break;
       }
     }
@@ -120,6 +147,7 @@ void button3_handler(void* arg)
 {
   while(1) {
     vTaskSuspend(button3_task_handle);
+    printf("Btn 3\n");
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(3);
@@ -138,7 +166,7 @@ void button3_handler(void* arg)
         break;
       }
       case STATS_SCREEN: {
-        handleConfigScreenButton(3);
+        handleStatsScreenButton(3);
         break;
       }
     }
@@ -152,6 +180,7 @@ void button4_handler(void* arg)
 {
   while(1) {
     vTaskSuspend(button4_task_handle);
+    printf("Btn 4\n");
     switch(getCurrentScreen()) {
       case MAP_SCREEN: {
         handleMapScreenButton(4);
@@ -170,7 +199,7 @@ void button4_handler(void* arg)
         break;
       }
       case STATS_SCREEN: {
-        handleConfigScreenButton(4);
+        handleStatsScreenButton(4);
         break;
       }
     }
@@ -182,6 +211,14 @@ void button4_handler(void* arg)
 
 void app_main()
 {
+  //Setup UI
+  setup_lv();
+  initScreens();
+
+  //Setup communication
+  setup_lora();
+
+  //Initialize the buttons
   gpio_pad_select_gpio(BUTTON1);
 	gpio_set_direction(BUTTON1, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(BUTTON1, GPIO_PULLUP_ONLY);
@@ -192,39 +229,34 @@ void app_main()
 	gpio_set_pull_mode(BUTTON2, GPIO_PULLUP_ONLY);
 	gpio_set_intr_type(BUTTON2, GPIO_INTR_NEGEDGE);
 
-  setup_lv();
+  gpio_pad_select_gpio(BUTTON3);
+	gpio_set_direction(BUTTON3, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BUTTON3, GPIO_PULLUP_ONLY);
+	gpio_set_intr_type(BUTTON3, GPIO_INTR_NEGEDGE);
 
-  initScreens();
-
-  setup_lora();
+  gpio_pad_select_gpio(BUTTON4);
+	gpio_set_direction(BUTTON4, GPIO_MODE_INPUT);
+	gpio_set_pull_mode(BUTTON4, GPIO_PULLUP_ONLY);
+	gpio_set_intr_type(BUTTON4, GPIO_INTR_NEGEDGE);
 
   gpio_intr_enable(BUTTON1);
   gpio_intr_enable(BUTTON2);
+  gpio_intr_enable(BUTTON3);
+  gpio_intr_enable(BUTTON4);
 
   gpio_install_isr_service(0);
 
   gpio_isr_handler_add(BUTTON1, button_isr, &button1_task_handle);
   gpio_isr_handler_add(BUTTON2, button_isr, &button2_task_handle);
-  //gpio_isr_handler_add(BUTTON, button_isr, &button3_task_handle);
-  //gpio_isr_handler_add(BUTTON, button_isr, &button4_task_handle);
+  gpio_isr_handler_add(BUTTON3, button_isr, &button3_task_handle);
+  gpio_isr_handler_add(BUTTON4, button_isr, &button4_task_handle);
 
   xTaskCreate(button1_handler, "button 1 isr", 2048, NULL, 5, &button1_task_handle);
   xTaskCreate(button2_handler, "button 2 isr", 2048, NULL, 5, &button2_task_handle);
-  //xTaskCreate(button3_handler, "button 3 isr", 2048, NULL, 5, &button3_task_handle);
-  //xTaskCreate(button4_handler, "button 4 isr", 2048, NULL, 5, &button4_task_handle);
+  xTaskCreate(button3_handler, "button 3 isr", 2048, NULL, 5, &button3_task_handle);
+  xTaskCreate(button4_handler, "button 4 isr", 2048, NULL, 5, &button4_task_handle);
 
+  //Start the periodic tasks
   xTaskCreate(guiTask, "gui", 2048, NULL, 1, NULL);
   xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
 }
-
-//Task for refreshing the display with new data.
-static void guiTask(void *pvParameter)
-{
-  (void) pvParameter;
-  while (1) {
-    printf("UI\n");
-    lv_task_handler();
-    lv_tick_inc(10);
-    vTaskDelay( 10 / portTICK_PERIOD_MS);
-  }
-} 

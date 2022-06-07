@@ -549,7 +549,7 @@ const lv_img_dsc_t hilgelo = {
   .header.reserved = 0,
   .header.w = 160,
   .header.h = 128,
-  .data_size = 20480 * LV_COLOR_SIZE / 8,
+  .data_size = 20480 * LV_COLOR_SIZE / 32,
   .data = hilgelo_map,
 };
 

@@ -22,11 +22,11 @@ MenuScreen* createMenuScreen() {
   menu_screen->root = lv_obj_create(NULL, NULL);
   char* options[4] = {"Map", "Messages", "Stats", "Config"};
   for(int i = 0; i < 4; i++) {
-    menu_screen->menuOptions[i] = getMenuButton(menu_screen->root, options[i], LV_COLOR_WHITE);
-    lv_obj_align(menu_screen->menuOptions[i], NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25);
+    menu_screen->menu_options[i] = getMenuButton(menu_screen->root, options[i], LV_COLOR_WHITE);
+    lv_obj_align(menu_screen->menu_options[i], NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25);
   }
 
-  lv_obj_set_style_local_bg_color(menu_screen->menuOptions[0], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_CYAN);
+  lv_obj_set_style_local_bg_color(menu_screen->menu_options[0], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_CYAN);
   return menu_screen;
 }
 
@@ -41,7 +41,7 @@ void handleMenuScreenButton(uint8_t button_num) {
           lv_scr_load(message_screen->root);
           break;
         case 2: 
-          lv_scr_load(config_screen->root);
+          lv_scr_load(stats_screen->root);
           break;
         case 3: 
           lv_scr_load(config_screen->root);
@@ -49,21 +49,20 @@ void handleMenuScreenButton(uint8_t button_num) {
       }
       break;
     }
-    case 2: {
-    for(int i = 0; i < 4; i++) 
+    
+    case 2:
+    case 3: 
+    {
+      for(int i = 0; i < 4; i++) 
       {
-        lv_obj_set_style_local_bg_color(menu_screen->menuOptions[i], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-      }
-      if(menu_screen->current_option >= 3) 
-      {
-        menu_screen->current_option = 0;
+        lv_obj_set_style_local_bg_color(menu_screen->menu_options[i], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
       } 
-      else 
-      {
-        menu_screen->current_option++;
-      }
+    
+      menu_screen->current_option = scrollMenu(menu_screen->current_option, 4, button_num == 3);
+
+      lv_obj_set_style_local_bg_color(menu_screen->menu_options[menu_screen->current_option], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_CYAN);
+      break;
+
     }
   }
-  
-  lv_obj_set_style_local_bg_color(menu_screen->menuOptions[menu_screen->current_option], LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_CYAN); 
 }
