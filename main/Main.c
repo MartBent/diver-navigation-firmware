@@ -10,7 +10,8 @@
 #include "esp_system.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
-
+#include "esp_partition.h"
+#include "nvs_flash.h"
 #include "Lora/Lora.c"
 
 #include "UI/display.c"
@@ -230,7 +231,6 @@ void button4_handler(void* arg)
 
 void app_main()
 {
-  //Setup UI
   setup_lv();
   initScreens();
 
