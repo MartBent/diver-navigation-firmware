@@ -1,6 +1,0 @@
-{
-    "C_Cpp.intelliSenseEngineFallback": "Disabled",
-    "files.associations": {
-        "semphr.h": "c"
-    }
-}
