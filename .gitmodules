@@ -7,3 +7,6 @@
 [submodule "components/esp-idf-ili9340"]
 	path = components/esp-idf-ili9340
 	url = https://github.com/nopnop2002/esp-idf-ili9340.git
+[submodule "components/libnmea-esp32"]
+	path = components/libnmea-esp32
+	url = https://github.com/igrr/libnmea-esp32.git
