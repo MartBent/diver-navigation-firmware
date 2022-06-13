@@ -17,6 +17,7 @@
 #include "UI/display.c"
 #include "UI/screens/screens.c"
 #include "UI/image.c"
+#include <gps.h>
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
@@ -35,19 +36,28 @@ static TaskHandle_t button4_task_handle = NULL;
 static void loraTask(void *pvParameter)
 {
   while(1) {
-    printf("Lora\n");
     uint8_t data[128] = {};
     uint8_t length = lora_receive(data);
-    if(length > 2) {
+    if(length > 1) {
       switch(data[0]) {
         case 0: {
           CommunicationMessage* msg = decodeCommMessage(data, length);
           processCommunicationMessage(msg);
           break;
         }
+        case 1: {
+          GpsMessage* msg = decodeGpsMessage(data, length);
+          processGpsMessage(msg);
+          break;
+        }
       }
     }
-    vTaskDelay(8000 / portTICK_PERIOD_MS);
+    GPSModuleCoordinates* loc = read_gps_coordinates();
+    if(loc != NULL) {
+      printf("Longtitude: %0.5f\n", loc->longitude);
+      printf("Latitude: %0.5f\n", loc->latitude);
+    }
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -55,13 +65,20 @@ static void loraTask(void *pvParameter)
 static void statsTask(void* pvParameter) {
   static uint8_t seconds = 0;
   static uint64_t minutes = 0;
+  
   while(1) {
-    ++seconds;
-    if(seconds >= 60) {
+    if(isDiving) {
+      ++seconds;
+      if(seconds >= 60) {
+        seconds = 0;
+        ++minutes;
+      }
+      lv_label_set_text_fmt(menu_screen->lbl_time, "Time: %lld:%d", minutes, seconds);
+    } else {
       seconds = 0;
-      ++minutes;
+      minutes = 0;
+      lv_label_set_text_fmt(menu_screen->lbl_time, "Time: 0:0");
     }
-    lv_label_set_text_fmt(menu_screen->lbl_time, "Time: %lld:%d", minutes, seconds);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
@@ -79,7 +96,6 @@ static void guiTask(void *pvParameter)
     gpio_intr_disable(BUTTON3);
     gpio_intr_disable(BUTTON4);
 
-    printf("UI\n");
     lv_task_handler();
     lv_tick_inc(10);
 
@@ -119,10 +135,6 @@ void button1_handler(void* arg)
         handleMessageScreenButton(1);
         break;
       }
-      case STATS_SCREEN: {
-        handleStatsScreenButton(1);
-        break;
-      }
     }
 
     //Delay for debounce
@@ -150,10 +162,6 @@ void button2_handler(void* arg)
       }
       case MESSAGE_SCREEN: {
         handleMessageScreenButton(2);
-        break;
-      }
-      case STATS_SCREEN: {
-        handleStatsScreenButton(2);
         break;
       }
     }
@@ -185,10 +193,6 @@ void button3_handler(void* arg)
         handleMessageScreenButton(3);
         break;
       }
-      case STATS_SCREEN: {
-        handleStatsScreenButton(3);
-        break;
-      }
     }
 
     //Delay for debounce
@@ -218,10 +222,6 @@ void button4_handler(void* arg)
         handleMessageScreenButton(4);
         break;
       }
-      case STATS_SCREEN: {
-        handleStatsScreenButton(4);
-        break;
-      }
     }
 
     //Delay for debounce
@@ -236,6 +236,9 @@ void app_main()
 
   //Setup communication
   setup_lora();
+
+  //Setup GPS
+  setup_gps();
 
   //Initialize the buttons
   gpio_pad_select_gpio(BUTTON1);

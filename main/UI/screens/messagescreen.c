@@ -70,12 +70,21 @@ MessageScreen* createMessageScreen() {
 
 void handleMessageScreenButton(uint8_t button_num) {
     switch (button_num) {
-      case 1:
-        lora_send_chars(message_options_str[message_screen->current_option], strlen(message_options_str[message_screen->current_option]));
+      case 1: {
+
+        char* message = malloc(strlen(message_options_str[message_screen->current_option]) + 1);
+        message[0] = 0;
+        memcpy(message+1, message_options_str[message_screen->current_option], strlen(message_options_str[message_screen->current_option]));
+        printf(message);
+
+        lora_send_chars(message, strlen(message_options_str[message_screen->current_option])+1);
         lv_textarea_add_text(message_screen->message_box, "Tx: \0");
         lv_textarea_add_text(message_screen->message_box, message_options_str[message_screen->current_option]);
         lv_textarea_add_char(message_screen->message_box, '\n');
+
+        free(message);
         break;
+      }
       case 2:
       case 3:
         for(int i = 0; i < 5; i++) 

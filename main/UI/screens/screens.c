@@ -3,6 +3,12 @@
 
 #include "lvgl.h"
 
+
+typedef struct {
+    lv_obj_t* back;
+    lv_obj_t* label;
+} button_t;
+
 typedef struct {
     lv_obj_t* root;
     lv_obj_t* message_box;
@@ -22,7 +28,7 @@ typedef struct  {
 
 typedef struct  {
     lv_obj_t* root;
-    lv_obj_t* menu_options[4];
+    button_t* menu_options[4];
     lv_obj_t* btn_up;
     lv_obj_t* btn_down;
     uint8_t current_option;
@@ -36,11 +42,6 @@ typedef struct {
     lv_obj_t* map;
     lv_obj_t* location_marker;
 } MapScreen;
-
-typedef struct {
-    lv_obj_t* root;
-    lv_obj_t* label;
-} StatsScreen;
 
 uint8_t scrollMenu(uint8_t index, uint8_t size, bool isUp) {
     uint8_t max = size - 1;
@@ -56,18 +57,15 @@ static MessageScreen* message_screen;
 static MapScreen* map_screen;
 static ConfigScreen* config_screen;
 static MenuScreen* menu_screen;
-static StatsScreen* stats_screen;
 
 #include "configscreen.c"
 #include "mapscreen.c"
 #include "messagescreen.c"
 #include "menuscreen.c"
-#include "statsscreen.c"
 
 typedef enum {
     MAP_SCREEN,
     MESSAGE_SCREEN,
-    STATS_SCREEN,
     CONFIG_SCREEN,
     MENU_SCREEN
 } screen_t;
@@ -85,9 +83,6 @@ screen_t getCurrentScreen() {
     if(lv_scr_act() == menu_screen->root) {
         return MENU_SCREEN;
     }
-    if(lv_scr_act() == stats_screen->root) {
-        return STATS_SCREEN;
-    }
     return MAP_SCREEN;
 }
 
@@ -97,7 +92,6 @@ void initScreens() {
   message_screen = createMessageScreen();
   config_screen = createConfigScreen();
   menu_screen = createMenuScreen();
-  stats_screen = createStatsScreen();
 
   lv_scr_load(menu_screen->root);
 }

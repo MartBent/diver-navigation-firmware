@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "esp_system.h"
 #include "esp_partition.h"
-
+#include "../../Lora/Lora.c"
 uint8_t* map;
 lv_img_dsc_t* map_src;
 
@@ -57,4 +57,9 @@ void handleMapScreenButton(uint8_t button_num) {
           break;
         }
     }
+}
+
+void processGpsMessage(GpsMessage* msg) {
+  //printf("Lati: %.5f\n", msg->latitude);
+  //printf("Long: %.5f\n", msg->longitude);
 }
