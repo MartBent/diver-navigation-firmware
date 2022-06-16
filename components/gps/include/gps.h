@@ -27,6 +27,7 @@ static const int U2_TX = 0;
 static const int U2_RX = 4;
 
 void setup_gps();
+void setup_gps_2();
 GPSModuleCoordinates* read_gps_coordinates();
 
 

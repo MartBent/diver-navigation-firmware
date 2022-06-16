@@ -9,6 +9,7 @@
 #include "freertos/semphr.h"
 #include "esp_system.h"
 #include "esp_log.h"
+#include "esp_event.h"
 #include "driver/gpio.h"
 #include "esp_partition.h"
 #include "nvs_flash.h"
@@ -51,11 +52,6 @@ static void loraTask(void *pvParameter)
           break;
         }
       }
-    }
-    GPSModuleCoordinates* loc = read_gps_coordinates();
-    if(loc != NULL) {
-      printf("Longtitude: %0.5f\n", loc->longitude);
-      printf("Latitude: %0.5f\n", loc->latitude);
     }
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
@@ -107,6 +103,18 @@ static void guiTask(void *pvParameter)
     vTaskDelay( 10 / portTICK_PERIOD_MS);
   }
 } 
+
+static void gpsTask(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+{
+  double* coords = (double*)event_data;
+
+  double lati = coords[0];
+  double longti = coords[1];
+
+  
+
+  printf("Lati %0.5f Long: %0.5f\n", lati, longti);
+}
 
 void IRAM_ATTR button_isr(void* arg) {
   vTaskResume(*(TaskHandle_t*)arg);
@@ -238,7 +246,7 @@ void app_main()
   setup_lora();
 
   //Setup GPS
-  setup_gps();
+  setup_gps(gpsTask);
 
   //Initialize the buttons
   gpio_pad_select_gpio(BUTTON1);

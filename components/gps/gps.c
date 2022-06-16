@@ -1,26 +1,37 @@
 #include "gps.h"
+#include "nmea_parser.h"
 
-void setup_gps(){
+// void setup_gps(){
       
-    uart_config_t uart_config = {
-        .baud_rate = 9600,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 122, 
-    };
+//     uart_config_t uart_config = {
+//         .baud_rate = 9600,
+//         .data_bits = UART_DATA_8_BITS,
+//         .parity = UART_PARITY_DISABLE,
+//         .stop_bits = UART_STOP_BITS_1,
+//         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+//         .rx_flow_ctrl_thresh = 122, 
+//     };
 
-    // Configure UART parameters
-    ESP_ERROR_CHECK(uart_param_config(gps_uart_num, &uart_config));
+//     // Configure UART parameters
+//     ESP_ERROR_CHECK(uart_param_config(gps_uart_num, &uart_config));
 
-    ESP_ERROR_CHECK(uart_set_pin(gps_uart_num, U2_TX, U2_RX, 0, 0));
+//     ESP_ERROR_CHECK(uart_set_pin(gps_uart_num, U2_TX, U2_RX, 0, 0));
 
-    // Setup UART buffered IO with event queue
+//     // Setup UART buffered IO with event queue
 
-    QueueHandle_t uart_queue;
+//     QueueHandle_t uart_queue;
     
-    ESP_ERROR_CHECK(uart_driver_install(gps_uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
+//     ESP_ERROR_CHECK(uart_driver_install(gps_uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
+// }
+
+void setup_gps(esp_event_handler_t event_handler)
+{
+    /* NMEA parser configuration */
+    nmea_parser_config_t config = NMEA_PARSER_CONFIG_DEFAULT();
+    /* init NMEA parser library */
+    nmea_parser_handle_t nmea_hdl = nmea_parser_init(&config);
+    /* register event handler  for NMEA parser library */
+    nmea_parser_add_handler(nmea_hdl, event_handler, NULL);
 }
 
 GPSModuleCoordinates* read_gps_coordinates(){
