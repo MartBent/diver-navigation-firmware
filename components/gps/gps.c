@@ -12,15 +12,15 @@ void setup_gps(){
     };
 
     // Configure UART parameters
-    ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
+    ESP_ERROR_CHECK(uart_param_config(gps_uart_num, &uart_config));
 
-    ESP_ERROR_CHECK(uart_set_pin(uart_num, U2_TX, U2_RX, 0, 0));
+    ESP_ERROR_CHECK(uart_set_pin(gps_uart_num, U2_TX, U2_RX, 0, 0));
 
     // Setup UART buffered IO with event queue
 
     QueueHandle_t uart_queue;
     
-    ESP_ERROR_CHECK(uart_driver_install(uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
+    ESP_ERROR_CHECK(uart_driver_install(gps_uart_num, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
 }
 
 GPSModuleCoordinates* read_gps_coordinates(){
@@ -32,8 +32,8 @@ GPSModuleCoordinates* read_gps_coordinates(){
     size_t total_bytes = 0;
 
     // Read data from the UART
-    total_bytes = uart_read_bytes(uart_num, (uint8_t*) buffer , uart_buffer_size, 100 / portTICK_PERIOD_MS);
-    uart_flush(uart_num);
+    total_bytes = uart_read_bytes(gps_uart_num, (uint8_t*) buffer , uart_buffer_size, 100 / portTICK_PERIOD_MS);
+    uart_flush(gps_uart_num);
     
     if (total_bytes > 0) {
 
