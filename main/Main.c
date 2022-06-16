@@ -111,7 +111,7 @@ static void gpsTask(void *event_handler_arg, esp_event_base_t event_base, int32_
   double lati = coords[0];
   double longti = coords[1];
 
-  
+  adjustLocationMarker(lati,longti);
 
   printf("Lati %0.5f Long: %0.5f\n", lati, longti);
 }
