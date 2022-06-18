@@ -22,7 +22,7 @@ MapScreen* createMapScreen() {
   map_src->header.w = 160;
   map_src->header.h = 128;
   map_src->data_size = 20480 * LV_COLOR_SIZE / 32;
-  map_src->data = thuis_map;
+  map_src->data = map;
 
   map_screen->root = lv_obj_create(NULL, NULL);
 
@@ -30,24 +30,25 @@ MapScreen* createMapScreen() {
 
   const esp_partition_t* part  = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, "storage");
 
- // ESP_ERROR_CHECK(esp_partition_read_raw(part, 0, map, 40960));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part, 0, map, 40960));
   
-  lv_img_set_src(map_screen->map, &thuis);
+  lv_img_set_src(map_screen->map, map_src);
   lv_obj_align(map_screen->map, NULL, LV_ALIGN_CENTER, 0, 0);
 
   map_screen->location_marker = lv_label_create(map_screen->root, NULL);
   lv_label_set_text(map_screen->location_marker, "X");
+  lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, 255, 255);
+
+  map_screen->location_boat_marker = lv_label_create(map_screen->root, NULL);
+  lv_label_set_text(map_screen->location_boat_marker, "O");
+  lv_obj_align(map_screen->location_boat_marker, NULL, LV_ALIGN_CENTER, 255, 255);
 
   return map_screen;
 }
 
 void handleMapScreenButton(uint8_t button_num) {
     switch (button_num) {
-      case 1: {
-          location_t loc = getCurrentMapCenterLocation();
-          
-          break;
-        }
+      case 1: 
       case 2:
       case 3:
         break;
@@ -58,7 +59,11 @@ void handleMapScreenButton(uint8_t button_num) {
     }
 }
 
-void processGpsMessage(GpsMessage* msg) {
+void processGpsMessage(const GpsMessage* msg) {
+  int x = 0;
+  int y = 0;
+  locationToPixels(msg->latitude, msg->longitude, &x , &y);
+  lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, -x, y);
 }
 
 void adjustLocationMarker(double latitude, double longtitude) {
@@ -66,6 +71,5 @@ void adjustLocationMarker(double latitude, double longtitude) {
   int x = 0;
   int y = 0;
   locationToPixels(latitude, longtitude, &x , &y);
-  printf("Offset: x: %d, y:%d\n", x ,y);
   lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, -x, y);
 }

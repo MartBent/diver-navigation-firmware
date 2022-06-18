@@ -66,20 +66,22 @@ uint8_t lora_receive(uint8_t* rx_data) {
     return length;
 }
 
-GpsMessage* decodeGpsMessage(uint8_t* data, uint8_t length) {
-  GpsMessage* msg = malloc(sizeof(GpsMessage));
+void encodeGpsMessage(const GpsMessage* msg, uint8_t* data) {
+  data[0] = 1;
+  memcpy(data+1, &msg->latitude, 8);
+  memcpy(data+9, &msg->longitude, 8);  
+}
+
+void decodeGpsMessage(const uint8_t* data, GpsMessage* msg) {
   double values[2] = {};
   memcpy(values, data+1, 16);
   msg->latitude = (double)values[0];
   msg->longitude = (double)values[1];
-  return msg;
 }
 
-CommunicationMessage* decodeCommMessage(uint8_t* data, uint8_t length) {
-  CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
+void decodeCommMessage(const uint8_t* data, const uint8_t length, CommunicationMessage* msg) {
   memcpy(msg->message, data+1, length-1);
   msg->message[msg->length] = '\0';
-  return msg;
 }
 
 MapMessage* decodeMapMessage(uint8_t* data, uint8_t length) {

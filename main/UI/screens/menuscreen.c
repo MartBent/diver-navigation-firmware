@@ -1,7 +1,6 @@
 #include "lvgl.h"
 #include "../font.c"
 #include "../../stats/time.c"
-#include <gps.h>
 
 static bool isDiving = false;
 

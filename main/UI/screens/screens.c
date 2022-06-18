@@ -41,6 +41,7 @@ typedef struct {
     lv_obj_t* root;
     lv_obj_t* map;
     lv_obj_t* location_marker;
+    lv_obj_t* location_boat_marker;
 } MapScreen;
 
 uint8_t scrollMenu(uint8_t index, uint8_t size, bool isUp) {

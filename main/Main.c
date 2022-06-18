@@ -42,13 +42,17 @@ static void loraTask(void *pvParameter)
     if(length > 1) {
       switch(data[0]) {
         case 0: {
-          CommunicationMessage* msg = decodeCommMessage(data, length);
+          CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
+          decodeCommMessage(data, length, msg);
           processCommunicationMessage(msg);
+          free(msg);
           break;
         }
         case 1: {
-          GpsMessage* msg = decodeGpsMessage(data, length);
+          GpsMessage* msg = malloc(sizeof(GpsMessage));
+          decodeGpsMessage(data, msg);
           processGpsMessage(msg);
+          free(msg);
           break;
         }
       }
@@ -112,8 +116,6 @@ static void gpsTask(void *event_handler_arg, esp_event_base_t event_base, int32_
   double longti = coords[1];
 
   adjustLocationMarker(lati,longti);
-
-  printf("Lati %0.5f Long: %0.5f\n", lati, longti);
 }
 
 void IRAM_ATTR button_isr(void* arg) {

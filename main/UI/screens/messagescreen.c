@@ -100,7 +100,7 @@ void handleMessageScreenButton(uint8_t button_num) {
     }
 }
 
-void processCommunicationMessage(CommunicationMessage* message) {
+void processCommunicationMessage(const CommunicationMessage* message) {
   lv_textarea_add_text(message_screen->message_box, "Rx: \0");
   lv_textarea_add_text(message_screen->message_box, message->message);
   lv_textarea_add_char(message_screen->message_box, '\n');
