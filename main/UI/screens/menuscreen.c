@@ -34,7 +34,15 @@ MenuScreen* createMenuScreen() {
 
   menu_screen->lbl_time = lv_label_create(menu_screen->root, NULL);
   lv_label_set_text(menu_screen->lbl_time, "Time:");
-  lv_obj_align(menu_screen->lbl_time, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 35);
+  lv_obj_align(menu_screen->lbl_time, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 10);
+
+  menu_screen->lbl_depth = lv_label_create(menu_screen->root, NULL);
+  lv_label_set_text(menu_screen->lbl_depth, "Depth:");
+  lv_obj_align(menu_screen->lbl_depth, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 35);
+
+  menu_screen->lbl_battery = lv_label_create(menu_screen->root, NULL);
+  lv_label_set_text(menu_screen->lbl_battery, "Battery:");
+  lv_obj_align(menu_screen->lbl_battery, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 60);
 
   return menu_screen;
 }

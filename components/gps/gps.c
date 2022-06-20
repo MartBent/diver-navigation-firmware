@@ -7,10 +7,12 @@ void setup_gps(esp_event_handler_t event_handler)
     /* init NMEA parser library */
     nmea_parser_handle_t nmea_hdl = nmea_parser_init(&config);
     /* register event handler  for NMEA parser library */
-    nmea_parser_add_handler(nmea_hdl, event_handler, NULL);
+    if(event_handler != NULL) {
+        nmea_parser_add_handler(nmea_hdl, event_handler, NULL);
+    }
 }
 
 void read_gps_coordinates(GPSModuleCoordinates* coordinates){
-    coordinates->latitude = newestLatitude;
-    coordinates->longtitude = newestLongtitude;
+    coordinates->latitude = 52.219591;//newestLatitude;
+    coordinates->longtitude = 6.880593;//newestLongtitude;
 }

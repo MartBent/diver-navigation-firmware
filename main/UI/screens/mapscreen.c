@@ -1,5 +1,4 @@
 
-#include "../../stats/location.c"
 #include <stdio.h>
 #include "esp_system.h"
 #include "esp_partition.h"
@@ -8,6 +7,9 @@
 
 uint8_t* map;
 lv_img_dsc_t* map_src;
+
+static double center_latitude = 0;
+static double center_longtitude = 0;
 
 MapScreen* createMapScreen() {
   
@@ -21,8 +23,8 @@ MapScreen* createMapScreen() {
   map_src->header.reserved = 0;
   map_src->header.w = 160;
   map_src->header.h = 128;
-  map_src->data_size = 20480 * LV_COLOR_SIZE / 32;
-  map_src->data = map;
+  map_src->data_size = 40960;
+  map_src->data = thuis_map;
 
   map_screen->root = lv_obj_create(NULL, NULL);
 
@@ -59,6 +61,35 @@ void handleMapScreenButton(uint8_t button_num) {
     }
 }
 
+
+typedef struct {
+    double latitude;
+    double longtitude;
+} location_t;
+
+location_t getCurrentMapCenterLocation() {  
+    location_t location = {
+        .latitude = 52.01186,
+        .longtitude = 6.70157
+    };
+    return location;
+}
+
+void locationToPixels(double latitude, double longtitude, int* x, int* y) {
+
+    double lati_per_pixel = 0.00005140625;
+    double long_per_pixel = 0.0000840875;
+
+    double delta_lati = center_latitude - latitude;
+    double delta_long = center_longtitude - longtitude;
+
+    int map_x = delta_long / long_per_pixel;
+    int map_y = delta_lati / lati_per_pixel;
+
+    *x = map_x;
+    *y = map_y;
+}
+
 void processGpsMessage(const GpsMessage* msg) {
   int x = 0;
   int y = 0;
@@ -73,3 +104,4 @@ void adjustLocationMarker(double latitude, double longtitude) {
   locationToPixels(latitude, longtitude, &x , &y);
   lv_obj_align(map_screen->location_marker, NULL, LV_ALIGN_CENTER, -x, y);
 }
+

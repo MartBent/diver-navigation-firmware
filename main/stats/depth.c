@@ -1,3 +1,5 @@
+#include <esp_random.h>
+
 uint8_t getCurrentDepth() {
-    return 6;
+    return esp_random() % 20;
 }

@@ -9,8 +9,8 @@
 #include "driver/uart.h"
 
 typedef struct {
-    float latitude;
-    float longitude;
+    double latitude;
+    double longitude;
 } GpsMessage;
 
 typedef struct {
@@ -68,8 +68,7 @@ uint8_t lora_receive(uint8_t* rx_data) {
 
 void encodeGpsMessage(const GpsMessage* msg, uint8_t* data) {
   data[0] = 1;
-  memcpy(data+1, &msg->latitude, 8);
-  memcpy(data+9, &msg->longitude, 8);  
+  memcpy(data+1, &msg->latitude, sizeof(double)*2);
 }
 
 void decodeGpsMessage(const uint8_t* data, GpsMessage* msg) {

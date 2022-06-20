@@ -37,8 +37,8 @@ static TaskHandle_t button4_task_handle = NULL;
 static void loraTask(void *pvParameter)
 {
   while(1) {
-    uint8_t data[128] = {};
-    uint8_t length = lora_receive(data);
+    uint8_t data[20480] = {};
+    uint8_t length = lora_receive(data);    
     if(length > 1) {
       switch(data[0]) {
         case 0: {
@@ -55,9 +55,33 @@ static void loraTask(void *pvParameter)
           free(msg);
           break;
         }
+         case 2: {
+          printf("rx map: %d", length);
+          break;
+        }
       }
     }
     vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
+static void gpsTask(void* pvParameter) {
+  GPSModuleCoordinates* coords = malloc(sizeof(GPSModuleCoordinates));
+  GpsMessage* msg = malloc(sizeof(GpsMessage));
+  uint8_t data[17] = {};
+  while(1) {
+
+    read_gps_coordinates(coords);
+    adjustLocationMarker(coords->latitude, coords->longtitude);
+
+    if(isDiving) {
+      msg->latitude = coords->latitude;
+      msg->longitude = coords->longtitude;
+      encodeGpsMessage(msg, data);
+      lora_send_bytes(data, 17);
+    }
+
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -79,6 +103,8 @@ static void statsTask(void* pvParameter) {
       minutes = 0;
       lv_label_set_text_fmt(menu_screen->lbl_time, "Time: 0:0");
     }
+    lv_label_set_text_fmt(menu_screen->lbl_depth, "Depth: %dm", getCurrentDepth());
+    lv_label_set_text_fmt(menu_screen->lbl_battery, "Battery: %d %%", 100);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
@@ -107,16 +133,6 @@ static void guiTask(void *pvParameter)
     vTaskDelay( 10 / portTICK_PERIOD_MS);
   }
 } 
-
-static void gpsTask(void *event_handler_arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
-{
-  double* coords = (double*)event_data;
-
-  double lati = coords[0];
-  double longti = coords[1];
-
-  adjustLocationMarker(lati,longti);
-}
 
 void IRAM_ATTR button_isr(void* arg) {
   vTaskResume(*(TaskHandle_t*)arg);
@@ -248,7 +264,7 @@ void app_main()
   setup_lora();
 
   //Setup GPS
-  setup_gps(gpsTask);
+  setup_gps(NULL);
 
   //Initialize the buttons
   gpio_pad_select_gpio(BUTTON1);
@@ -290,6 +306,7 @@ void app_main()
 
   //Start the periodic tasks
   xTaskCreate(guiTask, "gui", 2048, NULL, 1, NULL);
-  xTaskCreate(loraTask, "lora", 2048, NULL, 5, NULL);
+  xTaskCreate(loraTask, "lora", 40960, NULL, 5, NULL);
   xTaskCreate(statsTask, "stats", 2048, NULL, 5, NULL);
+  xTaskCreate(gpsTask, "gps", 2048, NULL, 5, NULL);
 }
