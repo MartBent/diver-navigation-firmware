@@ -77,7 +77,7 @@ static void loraTask(void *pvParameter)
             memcpy(&rx_latitude, &data[3], 8);
             memcpy(&rx_longtitude, &data[11], 8);
 
-            printf("Started map sync at %0.5f, %0.5f, Length: %d, Frames: %d\n", rx_latitude, rx_longtitude, compressed_length, frame_amount);
+            printf("Started map sync at %0.5f, %0.5f, Length: %ld, Frames: %d\n", rx_latitude, rx_longtitude, compressed_length, frame_amount);
 
             uint8_t ack[1] = {0x03};
             lora_send_bytes(ack, 1);
@@ -103,12 +103,12 @@ static void loraTask(void *pvParameter)
               lora_send_bytes(ack, 3);
 
               uint8_t* decompressed = malloc(40960);
-              int decompressedLen = 40960;
+              uLongf decompressedLen = 40960;
               uncompress(decompressed, &decompressedLen, compressed_map, compressed_length);
               
               if(decompressedLen == 40960) {
                 saveMap(decompressed);
-                printf("Map synced at %0.5f, %0.5f, Len %d\n", rx_latitude, rx_longtitude, decompressedLen);
+                printf("Map synced at %0.5f, %0.5f, Len %ld\n", rx_latitude, rx_longtitude, decompressedLen);
               } else {
                 printf("Map sync failed, try again");
               }

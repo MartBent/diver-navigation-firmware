@@ -8,7 +8,7 @@ static bool isSyncing = false;
 static uint8_t* compressed_map;
 static uint16_t compressed_map_index = 0;
 
-static uint16_t compressed_length = 0;
+static uLongf compressed_length = 0;
 static double rx_latitude = 0;
 static double rx_longtitude = 0;
 static uint16_t frame_amount = 0;
