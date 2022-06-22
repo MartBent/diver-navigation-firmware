@@ -1,8 +1,7 @@
 #include "../../Lora/Lora.c"
 #include <stdio.h>
 #include "../../stats/depth.c"
-
-char* message_options_str[5] = {"I am OK.\0", "I am in trouble.\0","I see a shark.\0", "My location is {}.\0", "My depth is %dm.\0"};
+char* message_options_str[5] = {"I am OK.\0", "I am in trouble.\0","I see a shark.\0", "My location is {}.\0", "My depth is 3m.\0"};
 
 lv_obj_t* getMessageButton(lv_obj_t* parent, char* text, lv_color_t color) {
 
@@ -72,31 +71,29 @@ MessageScreen* createMessageScreen() {
 void handleMessageScreenButton(uint8_t button_num) {
     switch (button_num) {
       case 1: {
-        if(message_screen->current_option == 2) {
-          char* message = malloc(strlen(message_options_str[message_screen->current_option]) + 1);
+        if(message_screen->current_option == 3) {
+          char* test = malloc(512);
+          printf("Testing send..%d\n", UART_FIFO_LEN);
+          lora_send_chars(test, 512);
+          free(test);
+        }
+        else if(message_screen->current_option == 4) {
+
+          char* message = malloc(18);
           message[0] = 0;
-          sprintf(message+1, message_options_str[message_screen->current_option], getCurrentDepth());
+
+          char* depth_message = malloc(17);
+          
+          sprintf(depth_message, "My depth is %dm", getCurrentDepth());
+          memcpy(message+1, depth_message, strlen(depth_message));
           printf(message);
 
-          lora_send_chars(message, strlen(message_options_str[message_screen->current_option])+1);
+          lora_send_chars(message, 18);
           lv_textarea_add_text(message_screen->message_box, "Tx: \0");
-          lv_textarea_add_text(message_screen->message_box, message);
+          lv_textarea_add_text(message_screen->message_box, depth_message);
           lv_textarea_add_char(message_screen->message_box, '\n');
           free(message);
-
-        } else if(message_screen->current_option == 3) {
-
-          char* message = malloc(strlen(message_options_str[message_screen->current_option]) + 1);
-          message[0] = 0;
-          sprintf(message+1, message_options_str[message_screen->current_option], getCurrentDepth());
-          printf(message);
-
-          lora_send_chars(message, strlen(message_options_str[message_screen->current_option])+1);
-          lv_textarea_add_text(message_screen->message_box, "Tx: \0");
-          lv_textarea_add_text(message_screen->message_box, message);
-          lv_textarea_add_char(message_screen->message_box, '\n');
-          free(message);
-
+          free(depth_message);
         } else {
           char* message = malloc(strlen(message_options_str[message_screen->current_option]) + 1);
           message[0] = 0;
@@ -109,7 +106,6 @@ void handleMessageScreenButton(uint8_t button_num) {
           lv_textarea_add_char(message_screen->message_box, '\n');
           free(message);
         }
-
         
         break;
       }

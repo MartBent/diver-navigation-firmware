@@ -3,6 +3,7 @@
 #include "../../stats/time.c"
 
 static bool isDiving = false;
+static bool isSyncing = false;
 
 button_t* getMenuButton(lv_obj_t* parent, char* text, lv_color_t color) {
 
@@ -25,7 +26,7 @@ MenuScreen* createMenuScreen() {
   MenuScreen* menu_screen = (MenuScreen*) malloc(sizeof(MenuScreen));
   menu_screen->current_option = 0;
   menu_screen->root = lv_obj_create(NULL, NULL);
-  char* options[4] = {"Map", "Messages", "Config", "Start"};
+  char* options[4] = {"Map", "Messages", "Sync map", "Start"};
   for(int i = 0; i < 4; i++) {
     menu_screen->menu_options[i] = getMenuButton(menu_screen->root, options[i], LV_COLOR_WHITE);
     lv_obj_align(menu_screen->menu_options[i]->back, NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25+10);
@@ -59,7 +60,13 @@ void handleMenuScreenButton(uint8_t button_num) {
           lv_scr_load(message_screen->root);
           break;
         case 2: 
-          lv_scr_load(config_screen->root);
+            if(!isSyncing) {
+            lv_label_set_text(menu_screen->menu_options[2]->label, "Syncing");
+            isSyncing = true;
+          } else {
+            lv_label_set_text(menu_screen->menu_options[2]->label, "Sync map");
+            isSyncing = false;
+          }
           break;
         case 3:
           if(!isDiving) {

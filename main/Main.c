@@ -19,9 +19,11 @@
 #include "UI/screens/screens.c"
 #include "UI/image.c"
 #include <gps.h>
+#include "stats/depth.c"
 
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
+#define UART_FIFO_LEN 512
 
 #define BUTTON1 27
 #define BUTTON2 19
@@ -33,13 +35,20 @@ static TaskHandle_t button2_task_handle = NULL;
 static TaskHandle_t button3_task_handle = NULL;
 static TaskHandle_t button4_task_handle = NULL;
 
+static uint8_t buffered_map[40960] = {};
+static uint16_t buffered_map_index = 0;
+static bool overflown = false;
+
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
 {
   while(1) {
-    uint8_t data[20480] = {};
-    uint8_t length = lora_receive(data);    
+    uint8_t data[128] = {};
+    uint8_t length = lora_receive(data);
     if(length > 1) {
+      for(int i = 0; i < length; i++) {
+        printf("%d", data[i]);
+      }
       switch(data[0]) {
         case 0: {
           CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
@@ -56,7 +65,42 @@ static void loraTask(void *pvParameter)
           break;
         }
          case 2: {
-          printf("rx map: %d", length);
+          if(isSyncing) {
+
+            uint16_t rx_index = (uint16_t)data[1] + (overflown ? 256 : 0);
+
+            printf("RX map, index %d ", rx_index);
+            if(rx_index == 326) {
+              //ID + Index [2]
+
+              //This contains the map coordinates [10]
+              memcpy(&buffered_map[rx_index*126], &data[2], 10);
+
+              //[20] Latitude, [28] Longtitude
+              double latitude;
+              double longtitude;
+
+              memcpy(&latitude, &data[12], 8);
+              memcpy(&longtitude, &data[20], 8);
+
+              printf("Map synced at %0.5f, %0.5f\n", latitude, longtitude);
+              overflown = false;
+            }
+            if(rx_index == buffered_map_index) {
+              printf("OK\n");
+              memcpy(&buffered_map[buffered_map_index*126], &data[2], length-2);
+              uint8_t ack[2] = {0x03, buffered_map_index++};
+              lora_send_bytes(ack, 2);
+              if(buffered_map_index == 255) {
+                overflown = true;
+              }
+            }
+            else if(rx_index == buffered_map_index-1) {
+              printf("RX map, index %d, ACK RESEND\n", buffered_map_index-1);
+              uint8_t ack[2] = {0x03, buffered_map_index-1};
+              lora_send_bytes(ack, 2);
+            }
+          }
           break;
         }
       }
@@ -74,7 +118,7 @@ static void gpsTask(void* pvParameter) {
     read_gps_coordinates(coords);
     adjustLocationMarker(coords->latitude, coords->longtitude);
 
-    if(isDiving) {
+    if(isDiving && !isSyncing) {
       msg->latitude = coords->latitude;
       msg->longitude = coords->longtitude;
       encodeGpsMessage(msg, data);
@@ -104,7 +148,7 @@ static void statsTask(void* pvParameter) {
       lv_label_set_text_fmt(menu_screen->lbl_time, "Time: 0:0");
     }
     lv_label_set_text_fmt(menu_screen->lbl_depth, "Depth: %dm", getCurrentDepth());
-    lv_label_set_text_fmt(menu_screen->lbl_battery, "Battery: %d %%", 100);
+    lv_label_set_text_fmt(menu_screen->lbl_battery, "Battery: %d%%", 100);
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
