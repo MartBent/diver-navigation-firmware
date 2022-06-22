@@ -5,12 +5,20 @@
 static bool isDiving = false;
 static bool isSyncing = false;
 
+static uint8_t* compressed_map;
+static uint16_t compressed_map_index = 0;
+
+static uint16_t compressed_length = 0;
+static double rx_latitude = 0;
+static double rx_longtitude = 0;
+static uint16_t frame_amount = 0;
+
 button_t* getMenuButton(lv_obj_t* parent, char* text, lv_color_t color) {
 
   button_t* button = malloc(sizeof(button_t));
 
   button->back = lv_obj_create(parent, NULL);
-  lv_obj_set_width(button->back, 40);
+  lv_obj_set_width(button->back, 50);
 	lv_obj_set_height(button->back, 20);
 	button->label = lv_label_create(button->back, NULL);
 	lv_label_set_text(button->label, text);
@@ -26,7 +34,7 @@ MenuScreen* createMenuScreen() {
   MenuScreen* menu_screen = (MenuScreen*) malloc(sizeof(MenuScreen));
   menu_screen->current_option = 0;
   menu_screen->root = lv_obj_create(NULL, NULL);
-  char* options[4] = {"Map", "Messages", "Sync map", "Start"};
+  char* options[4] = {"Map", "Messages", "Not sync", "Start"};
   for(int i = 0; i < 4; i++) {
     menu_screen->menu_options[i] = getMenuButton(menu_screen->root, options[i], LV_COLOR_WHITE);
     lv_obj_align(menu_screen->menu_options[i]->back, NULL, LV_ALIGN_IN_TOP_LEFT, 5, i*25+10);
@@ -35,15 +43,15 @@ MenuScreen* createMenuScreen() {
 
   menu_screen->lbl_time = lv_label_create(menu_screen->root, NULL);
   lv_label_set_text(menu_screen->lbl_time, "Time:");
-  lv_obj_align(menu_screen->lbl_time, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 10);
+  lv_obj_align(menu_screen->lbl_time, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 10);
 
   menu_screen->lbl_depth = lv_label_create(menu_screen->root, NULL);
   lv_label_set_text(menu_screen->lbl_depth, "Depth:");
-  lv_obj_align(menu_screen->lbl_depth, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 35);
+  lv_obj_align(menu_screen->lbl_depth, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 35);
 
   menu_screen->lbl_battery = lv_label_create(menu_screen->root, NULL);
   lv_label_set_text(menu_screen->lbl_battery, "Battery:");
-  lv_obj_align(menu_screen->lbl_battery, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 60);
+  lv_obj_align(menu_screen->lbl_battery, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 60);
 
   return menu_screen;
 }
@@ -60,12 +68,16 @@ void handleMenuScreenButton(uint8_t button_num) {
           lv_scr_load(message_screen->root);
           break;
         case 2: 
-            if(!isSyncing) {
-            lv_label_set_text(menu_screen->menu_options[2]->label, "Syncing");
-            isSyncing = true;
-          } else {
-            lv_label_set_text(menu_screen->menu_options[2]->label, "Sync map");
+          if(isSyncing) {
             isSyncing = false;
+            compressed_length = 0;
+            compressed_map_index = 0;
+            frame_amount = 0;
+            rx_latitude = 0;
+            rx_longtitude = 0;
+
+            //Set back the button text
+            lv_label_set_text(menu_screen->menu_options[2]->label, "Not Sync");
           }
           break;
         case 3:

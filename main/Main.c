@@ -18,13 +18,14 @@
 #include "UI/display.c"
 #include "UI/screens/screens.c"
 #include "UI/image.c"
+
 #include <gps.h>
 #include <zlib.h>
 #include "stats/depth.c"
 
+
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
-#define UART_FIFO_LEN 512
 
 #define BUTTON1 27
 #define BUTTON2 19
@@ -36,15 +37,6 @@ static TaskHandle_t button2_task_handle = NULL;
 static TaskHandle_t button3_task_handle = NULL;
 static TaskHandle_t button4_task_handle = NULL;
 
-static uint8_t buffered_map[40960] = {};
-static uint16_t buffered_map_index = 0;
-static bool overflown = false;
-
-static uint16_t compressed_length = 0;
-static double rx_latitude = 0;
-static double rx_longtitude = 0;
-static uint16_t frame_amount = 0;
-
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
 {
@@ -52,64 +44,112 @@ static void loraTask(void *pvParameter)
     uint8_t data[128] = {};
     uint8_t length = lora_receive(data);
     if(length > 1) {
-      for(int i = 0; i < length; i++) {
-        printf("%d", data[i]);
-      }
+      printf("RX lora %d \n", length);
       switch(data[0]) {
         case 0: {
-          CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
-          decodeCommMessage(data, length, msg);
-          processCommunicationMessage(msg);
-          free(msg);
+          if(!isSyncing) {
+            CommunicationMessage* msg = malloc(sizeof(CommunicationMessage));
+            decodeCommMessage(data, length, msg);
+            processCommunicationMessage(msg);
+            free(msg);
+          }
           break;
         }
         case 1: {
-          GpsMessage* msg = malloc(sizeof(GpsMessage));
-          decodeGpsMessage(data, msg);
-          processGpsMessage(msg);
-          free(msg);
+          if(!isSyncing) {
+            GpsMessage* msg = malloc(sizeof(GpsMessage));
+            decodeGpsMessage(data, msg);
+            processGpsMessage(msg);
+            free(msg);
+          }
           break;
         }
          case 2: {
-          if(isSyncing) {
-            if(length == 19) {
-              compressed_length = (uint16_t)data[1] << 8 | (uint16_t)data[0];
-              frame_amount = (uint16_t)ceil((double)compressedLength / 126);
-              printf("Started map sync at %0.5f, %0.5f, Length: %d, Frames: %d\n", rx_latitude, rx_longtitude, compressed_length, frame_amount);
-            }
+          //The first sync message will give the length and coordinates.
+          if(length == 19 && compressed_map_index == 0) {
+            
+            printf("\n");
+            memcpy(&compressed_length, &data[1], 2);
+            compressed_map = malloc(compressed_length);
 
-            uint16_t rx_index = (uint16_t)data[1] + (overflown ? 256 : 0);
+            frame_amount = (uint16_t)ceil((double)compressed_length / 125);
 
-            printf("RX map, index %d ", rx_index);
-            if(rx_index == 326) {
-              //ID + Index [2]
+            memcpy(&rx_latitude, &data[3], 8);
+            memcpy(&rx_longtitude, &data[11], 8);
 
-              //This contains the map coordinates [10]
-              memcpy(&buffered_map[rx_index*126], &data[2], 10);
+            printf("Started map sync at %0.5f, %0.5f, Length: %d, Frames: %d\n", rx_latitude, rx_longtitude, compressed_length, frame_amount);
 
-              //[20] Latitude, [28] Longtitude
-              double latitude;
-              double longtitude;
+            uint8_t ack[1] = {0x03};
+            lora_send_bytes(ack, 1);
 
-              memcpy(&latitude, &data[12], 8);
-              memcpy(&longtitude, &data[20], 8);
+            isSyncing = true;
+            lv_label_set_text(menu_screen->menu_options[2]->label, "Syncing");
+          }
+          else {
+            uint16_t rx_index = 0;
 
-              printf("Map synced at %0.5f, %0.5f\n", latitude, longtitude);
-              overflown = false;
-            }
-            if(rx_index == buffered_map_index) {
-              printf("OK\n");
-              memcpy(&buffered_map[buffered_map_index*126], &data[2], length-2);
-              uint8_t ack[2] = {0x03, buffered_map_index++};
-              lora_send_bytes(ack, 2);
-              if(buffered_map_index == 255) {
-                overflown = true;
+            memcpy(&rx_index, &data[1], 2);
+            
+            printf("RX map, index %d\n", rx_index);
+
+            if(rx_index == frame_amount-1) { //Final fragment
+
+              //Data[Index, Index[0], Index[1], Map[0] .... Map[n]]
+              memcpy(&compressed_map[rx_index*125], &data[3], length-3); //Length - 3 to skip index + ID
+              
+              uint8_t ack[3] = {0x03, 0,0};
+              memcpy(&ack[1], &compressed_map_index, 2);
+              printf("Sending ACK %d\n", compressed_map_index);
+              lora_send_bytes(ack, 3);
+
+              uint8_t* decompressed = malloc(40960);
+              int decompressedLen = 40960;
+              uncompress(decompressed, &decompressedLen, compressed_map, compressed_length);
+              
+              if(decompressedLen == 40960) {
+                saveMap(decompressed);
+                printf("Map synced at %0.5f, %0.5f, Len %d\n", rx_latitude, rx_longtitude, decompressedLen);
+              } else {
+                printf("Map sync failed, try again");
               }
+              
+              free(decompressed);
+              lv_img_set_src(map_screen->map, map_src);
+
+              center_latitude = rx_latitude;
+              center_longtitude = rx_longtitude;
+
+              free(compressed_map);
+
+              //Reset variables after syncing
+              isSyncing = false;
+              compressed_length = 0;
+              compressed_map_index = 0;
+              frame_amount = 0;
+              rx_latitude = 0;
+              rx_longtitude = 0;
+
+              //Set back the button text
+              lv_label_set_text(menu_screen->menu_options[2]->label, "Not Sync");
             }
-            else if(rx_index == buffered_map_index-1) {
-              printf("RX map, index %d, ACK RESEND\n", buffered_map_index-1);
-              uint8_t ack[2] = {0x03, buffered_map_index-1};
-              lora_send_bytes(ack, 2);
+
+            //If index is correct, append to compressed map
+            else if(rx_index == compressed_map_index && length == 128) {
+              printf("Appending map at %d\n", compressed_map_index*125);
+              memcpy(&compressed_map[compressed_map_index*125], &data[3], length-3); //Length - 3 to skip index + ID
+              uint8_t ack[3] = {0x03, 0,0};
+              memcpy(&ack[1], &compressed_map_index, 2);
+              printf("Sending ACK %d\n", compressed_map_index);
+              lora_send_bytes(ack, 3);
+              compressed_map_index++;
+            }
+
+            else if(rx_index == compressed_map_index-1 && length == 128) { //Resend
+              uint16_t old_index = compressed_map_index-1;
+              printf("RX map, index %d, ACK RESEND\n", old_index); //Index - 1 since its a resend
+              uint8_t ack[3] = {0x03, 0,0};
+              memcpy(&ack[1], &old_index, 2);
+              lora_send_bytes(ack, 3);
             }
           }
           break;

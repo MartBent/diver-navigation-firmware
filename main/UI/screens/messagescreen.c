@@ -1,6 +1,7 @@
 #include "../../Lora/Lora.c"
 #include <stdio.h>
 #include "../../stats/depth.c"
+#include <gps.h>
 char* message_options_str[5] = {"I am OK.\0", "I am in trouble.\0","I see a shark.\0", "My location is {}.\0", "My depth is 3m.\0"};
 
 lv_obj_t* getMessageButton(lv_obj_t* parent, char* text, lv_color_t color) {
@@ -68,14 +69,27 @@ MessageScreen* createMessageScreen() {
   return message_screen;
 }
 
-void handleMessageScreenButton(uint8_t button_num) {
+void handleMessageScreenButton(uint8_t button_num) { 
     switch (button_num) {
       case 1: {
         if(message_screen->current_option == 3) {
-          char* test = malloc(512);
-          printf("Testing send..%d\n", UART_FIFO_LEN);
-          lora_send_chars(test, 512);
-          free(test);
+          char* message = malloc(651);
+          message[0] = 0;
+
+          char* depth_message = malloc(650);
+          GPSModuleCoordinates* coords = malloc(sizeof(GPSModuleCoordinates));
+          read_gps_coordinates(coords);
+          sprintf(depth_message, "My location is %0.5f, %0.5f", coords->latitude, coords->longtitude);
+          memcpy(message+1, depth_message, strlen(depth_message));
+          printf(message);
+
+          lora_send_chars(message, 32);
+          lv_textarea_add_text(message_screen->message_box, "Tx: \0");
+          lv_textarea_add_text(message_screen->message_box, depth_message);
+          lv_textarea_add_char(message_screen->message_box, '\n');
+          free(message);
+          free(depth_message);
+          free(coords);
         }
         else if(message_screen->current_option == 4) {
 

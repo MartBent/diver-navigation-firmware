@@ -1,3 +1,6 @@
+#ifndef GPS_C
+#define GPS_C
+
 #include "gps.h"
 
 void setup_gps(esp_event_handler_t event_handler)
@@ -12,7 +15,10 @@ void setup_gps(esp_event_handler_t event_handler)
     }
 }
 
+//Returns map center for now.
 void read_gps_coordinates(GPSModuleCoordinates* coordinates){
-    coordinates->latitude = 52.219591;//newestLatitude;
-    coordinates->longtitude = 6.880593;//newestLongtitude;
+    coordinates->latitude = newestLatitude; //52.219591;
+    coordinates->longtitude = newestLongtitude;//6.880593;
 }
+
+#endif
