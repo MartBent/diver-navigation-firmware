@@ -19,6 +19,7 @@
 #include "UI/screens/screens.c"
 #include "UI/image.c"
 #include <gps.h>
+#include <zlib.h>
 #include "stats/depth.c"
 
 #define configUSE_TIME_SLICING 1
@@ -38,6 +39,11 @@ static TaskHandle_t button4_task_handle = NULL;
 static uint8_t buffered_map[40960] = {};
 static uint16_t buffered_map_index = 0;
 static bool overflown = false;
+
+static uint16_t compressed_length = 0;
+static double rx_latitude = 0;
+static double rx_longtitude = 0;
+static uint16_t frame_amount = 0;
 
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
@@ -66,6 +72,11 @@ static void loraTask(void *pvParameter)
         }
          case 2: {
           if(isSyncing) {
+            if(length == 19) {
+              compressed_length = (uint16_t)data[1] << 8 | (uint16_t)data[0];
+              frame_amount = (uint16_t)ceil((double)compressedLength / 126);
+              printf("Started map sync at %0.5f, %0.5f, Length: %d, Frames: %d\n", rx_latitude, rx_longtitude, compressed_length, frame_amount);
+            }
 
             uint16_t rx_index = (uint16_t)data[1] + (overflown ? 256 : 0);
 
