@@ -6,8 +6,6 @@
 #include "esp_system.h"
 #include "esp_partition.h"
 #include "../../Lora/Lora.c"
-#include "../thuis.c"
-#include "../saxion.c"
 #include <zlib.h>
 
 uint8_t* map;
@@ -15,15 +13,20 @@ lv_img_dsc_t* map_src;
 
 static double center_latitude = 52.219591;
 static double center_longtitude = 6.880593;
+
 static const esp_partition_t* part;
 
-void retrieveMap(uint8_t* map_out) {
+void retrieveMap(uint8_t* map_out, double* latitude, double* longtitude) {
   ESP_ERROR_CHECK(esp_partition_read_raw(part, 0, map_out, 40960));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part, 40960, latitude, 8));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part, 40968, longtitude, 8));
 }
 
-void saveMap(const uint8_t* map_in) {
+void saveMap(const uint8_t* map_in, const double latitude, const double  longtitude) {
   ESP_ERROR_CHECK(esp_partition_erase_range(part, 0, 40960));
   ESP_ERROR_CHECK(esp_partition_write_raw(part, 0, map_in, 40960));
+  ESP_ERROR_CHECK(esp_partition_write_raw(part, 40960, &latitude, 8));
+  ESP_ERROR_CHECK(esp_partition_write_raw(part, 40968, &longtitude, 8));
 }
 
 MapScreen* createMapScreen() {
@@ -35,7 +38,7 @@ MapScreen* createMapScreen() {
   map_src = malloc(sizeof(lv_img_dsc_t));
   map = malloc(40960);
 
-  retrieveMap(map);
+  retrieveMap(map, &center_latitude, &center_longtitude);
 
   map_src->header.cf = LV_IMG_CF_TRUE_COLOR;
   map_src->header.always_zero = 0;
@@ -96,11 +99,19 @@ void locationToPixels(double latitude, double longtitude, int* x, int* y) {
     *y = map_y;
 }
 
-void processGpsMessage(const GpsMessage* msg) {
+void processGpsMessage(const GpsMessage* msg, bool isBoat) {
   int x = 0;
   int y = 0;
+  
   locationToPixels(msg->latitude, msg->longitude, &x , &y);
-  lv_obj_align(map_screen->location_boat_marker, NULL, LV_ALIGN_CENTER, -x, y);
+
+  if(isBoat) {
+    lv_obj_align(map_screen->location_boat_marker, NULL, LV_ALIGN_CENTER, -x, y);
+  } else {
+    lv_obj_t* point = lv_label_create(map_screen->root, NULL);
+    lv_label_set_text(point, "+");
+    lv_obj_align(point, NULL, LV_ALIGN_CENTER, -x, y);
+  }
 }
 
 void adjustLocationMarker(double latitude, double longtitude) {

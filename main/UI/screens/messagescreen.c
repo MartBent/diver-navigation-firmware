@@ -83,7 +83,22 @@ void handleMessageScreenButton(uint8_t button_num) {
           memcpy(message+1, depth_message, strlen(depth_message));
           printf(message);
 
-          lora_send_chars(message, 32);
+          lv_obj_t* point = lv_label_create(map_screen->root, NULL);
+          lv_label_set_text(point, "+");
+
+          int x = 0;
+          int y = 0;
+          
+          locationToPixels(coords->latitude, coords->longtitude, &x , &y);
+
+          lv_obj_align(point, NULL, LV_ALIGN_CENTER, -x, y);
+
+          uint8_t data[17] = {0};
+          data[0] = 72;
+          memcpy(data+1, &coords->latitude, 8);
+          memcpy(data+9, &coords->longtitude, 8);
+
+          lora_send_bytes(data, 17);
           lv_textarea_add_text(message_screen->message_box, "Tx: \0");
           lv_textarea_add_text(message_screen->message_box, depth_message);
           lv_textarea_add_char(message_screen->message_box, '\n');

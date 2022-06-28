@@ -17,7 +17,6 @@
 
 #include "UI/display.c"
 #include "UI/screens/screens.c"
-#include "UI/image.c"
 
 #include <gps.h>
 #include <zlib.h>
@@ -27,9 +26,9 @@
 #define configUSE_TIME_SLICING 1
 #define LV_TICK_PERIOD_MS 1
 
-#define BUTTON1 27
-#define BUTTON2 19
-#define BUTTON3 22
+#define BUTTON1 15
+#define BUTTON2 22
+#define BUTTON3 19
 #define BUTTON4 21
 
 static TaskHandle_t button1_task_handle = NULL;
@@ -59,12 +58,21 @@ static void loraTask(void *pvParameter)
           if(!isSyncing) {
             GpsMessage* msg = malloc(sizeof(GpsMessage));
             decodeGpsMessage(data, msg);
-            processGpsMessage(msg);
+            processGpsMessage(msg, true);
             free(msg);
           }
           break;
         }
-         case 2: {
+        case 72: {
+          if(!isSyncing) {
+            GpsMessage* msg = malloc(sizeof(GpsMessage));
+            decodeGpsMessage(data, msg);
+            processGpsMessage(msg, false);
+            free(msg);
+          }
+          break;
+        }
+        case 2: {
           //The first sync message will give the length and coordinates.
           if(length == 19 && compressed_map_index == 0) {
             
@@ -108,7 +116,7 @@ static void loraTask(void *pvParameter)
               
               if(decompressedLen == 40960) {
                 //Save the map to flash memory
-                saveMap(decompressed);
+                saveMap(decompressed, rx_latitude, rx_longtitude);
                 printf("Map synced at %0.5f, %0.5f, Len %ld\n", rx_latitude, rx_longtitude, decompressedLen);
               } else {
                 printf("Map sync failed, try again");
@@ -116,7 +124,7 @@ static void loraTask(void *pvParameter)
               free(decompressed);
 
               //Refresh map from flash
-              retrieveMap(map_src->data);
+              retrieveMap(map, &center_latitude, &center_longtitude);
               lv_img_set_src(map_screen->map, map_src);
 
               center_latitude = rx_latitude;
