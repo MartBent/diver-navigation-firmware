@@ -107,13 +107,16 @@ static void loraTask(void *pvParameter)
               uncompress(decompressed, &decompressedLen, compressed_map, compressed_length);
               
               if(decompressedLen == 40960) {
+                //Save the map to flash memory
                 saveMap(decompressed);
                 printf("Map synced at %0.5f, %0.5f, Len %ld\n", rx_latitude, rx_longtitude, decompressedLen);
               } else {
                 printf("Map sync failed, try again");
               }
-              
               free(decompressed);
+
+              //Refresh map from flash
+              retrieveMap(map_src->data);
               lv_img_set_src(map_screen->map, map_src);
 
               center_latitude = rx_latitude;

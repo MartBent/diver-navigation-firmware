@@ -1,3 +1,5 @@
+#ifndef NMEA_PARSER_H
+#define NMEA_PARSER_H
 // Copyright 2015-2018 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -228,4 +230,5 @@ esp_err_t nmea_parser_remove_handler(nmea_parser_handle_t nmea_hdl, esp_event_ha
 
 #ifdef __cplusplus
 }
+#endif
 #endif

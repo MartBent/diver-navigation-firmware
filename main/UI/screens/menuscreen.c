@@ -1,3 +1,6 @@
+#ifndef MENUSCREEN_C
+#define MENUSCREEN_C
+
 #include "lvgl.h"
 #include "../font.c"
 #include "../../stats/time.c"
@@ -114,3 +117,4 @@ void handleMenuScreenButton(uint8_t button_num) {
     }
   }
 }
+#endif

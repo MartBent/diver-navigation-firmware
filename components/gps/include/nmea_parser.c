@@ -1,3 +1,5 @@
+#ifndef NMEA_PARSER_C
+#define NMEA_PARSER_C
 // Copyright 2015-2018 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -751,3 +753,4 @@ esp_err_t nmea_parser_remove_handler(nmea_parser_handle_t nmea_hdl, esp_event_ha
     esp_gps_t *esp_gps = (esp_gps_t *)nmea_hdl;
     return esp_event_handler_unregister_with(esp_gps->event_loop_hdl, ESP_NMEA_EVENT, ESP_EVENT_ANY_ID, event_handler);
 }
+#endif
