@@ -1,5 +1,6 @@
 #ifndef NMEA_PARSER_H
 #define NMEA_PARSER_H
+
 // Copyright 2015-2018 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,8 +39,6 @@ extern "C" {
 #define CONFIG_NMEA_STATEMENT_GLL 1
 #define CONFIG_NMEA_STATEMENT_VTG 1
 
-static double newestLatitude = 0;
-static double newestLongtitude = 0;
 
 /**
  * @brief Declare of NMEA Parser Event base

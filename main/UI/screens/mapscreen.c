@@ -11,34 +11,37 @@
 uint8_t* map;
 lv_img_dsc_t* map_src;
 
-static double center_latitude = 52.219591;
-static double center_longtitude = 6.880593;
+static double center_latitude = 0;
+static double center_longtitude = 0;
 
-static const esp_partition_t* part;
+static const esp_partition_t* part_map;
 
 void retrieveMap(uint8_t* map_out, double* latitude, double* longtitude) {
-  ESP_ERROR_CHECK(esp_partition_read_raw(part, 0, map_out, 40960));
-  ESP_ERROR_CHECK(esp_partition_read_raw(part, 40960, latitude, 8));
-  ESP_ERROR_CHECK(esp_partition_read_raw(part, 40968, longtitude, 8));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part_map, 0, map_out, 40960));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part_map, 40960, latitude, 8));
+  ESP_ERROR_CHECK(esp_partition_read_raw(part_map, 40968, longtitude, 8));
 }
 
 void saveMap(const uint8_t* map_in, const double latitude, const double  longtitude) {
-  ESP_ERROR_CHECK(esp_partition_erase_range(part, 0, 40960));
-  ESP_ERROR_CHECK(esp_partition_write_raw(part, 0, map_in, 40960));
-  ESP_ERROR_CHECK(esp_partition_write_raw(part, 40960, &latitude, 8));
-  ESP_ERROR_CHECK(esp_partition_write_raw(part, 40968, &longtitude, 8));
+  ESP_ERROR_CHECK(esp_partition_erase_range(part_map, 0, 40960+4096));
+
+  ESP_ERROR_CHECK(esp_partition_write_raw(part_map, 0, map_in, 40960));
+  ESP_ERROR_CHECK(esp_partition_write_raw(part_map, 40960, &latitude, 8));
+  ESP_ERROR_CHECK(esp_partition_write_raw(part_map, 40968, &longtitude, 8));
 }
 
 MapScreen* createMapScreen() {
   
   MapScreen* map_screen = malloc(sizeof(MapScreen));
 
-  part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, "storage");
+  part_map = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, "map");
 
   map_src = malloc(sizeof(lv_img_dsc_t));
   map = malloc(40960);
 
   retrieveMap(map, &center_latitude, &center_longtitude);
+
+  printf("Map center: %0.5f, %0.5f", center_latitude, center_longtitude);
 
   map_src->header.cf = LV_IMG_CF_TRUE_COLOR;
   map_src->header.always_zero = 0;

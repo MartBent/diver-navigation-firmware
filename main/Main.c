@@ -36,6 +36,7 @@ static TaskHandle_t button2_task_handle = NULL;
 static TaskHandle_t button3_task_handle = NULL;
 static TaskHandle_t button4_task_handle = NULL;
 
+
 //Task for receiving any LoRa messages and processing them.
 static void loraTask(void *pvParameter)
 {

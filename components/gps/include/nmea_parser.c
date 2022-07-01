@@ -508,12 +508,9 @@ static esp_err_t gps_decode(esp_gps_t *esp_gps, size_t len)
                     esp_gps->parsed_statement = 0;
                     double coords[2] = {esp_gps->parent.latitude , esp_gps->parent.longitude};
 
-                    newestLatitude = coords[0];
-                    newestLongtitude = coords[1];
-                    printf("Location found: %.5f, %.5f", coords[0], coords[1]);
                     /* Send signal to notify that GPS information has been updated */
                     esp_event_post_to(esp_gps->event_loop_hdl, ESP_NMEA_EVENT, GPS_UPDATE,
-                                      &(coords), sizeof(gps_t), 100 / portTICK_PERIOD_MS);
+                                      &(coords), sizeof(double)*2, 100 / portTICK_PERIOD_MS);
                 }
             }
             else 

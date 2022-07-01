@@ -11,6 +11,9 @@ typedef struct {
     double longtitude;
 } GPSModuleCoordinates;
 
+static double newestLatitude = 0;
+static double newestLongtitude = 0;
+
 static const uart_port_t gps_uart_num = UART_NUM_1;
 static const int uart_buffer_size = (1024);
 
