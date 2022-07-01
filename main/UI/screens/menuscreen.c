@@ -7,7 +7,7 @@
 
 static bool isDiving = false;
 static bool isSyncing = false;
-
+static uint8_t currentSyncPercentage = 0;
 static uint8_t* compressed_map;
 static uint16_t compressed_map_index = 0;
 
@@ -15,6 +15,7 @@ static uLongf compressed_length = 0;
 static double rx_latitude = 0;
 static double rx_longtitude = 0;
 static uint16_t frame_amount = 0;
+static uint16_t rx_frame_amount = 0;
 
 button_t* getMenuButton(lv_obj_t* parent, char* text, lv_color_t color) {
 
@@ -52,9 +53,9 @@ MenuScreen* createMenuScreen() {
   lv_label_set_text(menu_screen->lbl_depth, "Depth:");
   lv_obj_align(menu_screen->lbl_depth, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 35);
 
-  menu_screen->lbl_battery = lv_label_create(menu_screen->root, NULL);
-  lv_label_set_text(menu_screen->lbl_battery, "Battery:");
-  lv_obj_align(menu_screen->lbl_battery, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 60);
+  menu_screen->lbl_sync = lv_label_create(menu_screen->root, NULL);
+  lv_label_set_text(menu_screen->lbl_sync, "Syncing:");
+  lv_obj_align(menu_screen->lbl_sync, NULL, LV_ALIGN_IN_TOP_LEFT, 55, 60);
 
   return menu_screen;
 }

@@ -33,7 +33,7 @@ typedef struct  {
     lv_obj_t* btn_down;
     uint8_t current_option;
     lv_obj_t* lbl_depth;
-    lv_obj_t* lbl_battery;
+    lv_obj_t* lbl_sync;
     lv_obj_t* lbl_time;
 } MenuScreen;
 

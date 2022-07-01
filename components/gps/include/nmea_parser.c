@@ -510,7 +510,7 @@ static esp_err_t gps_decode(esp_gps_t *esp_gps, size_t len)
 
                     newestLatitude = coords[0];
                     newestLongtitude = coords[1];
-
+                    printf("Location found: %.5f, %.5f", coords[0], coords[1]);
                     /* Send signal to notify that GPS information has been updated */
                     esp_event_post_to(esp_gps->event_loop_hdl, ESP_NMEA_EVENT, GPS_UPDATE,
                                       &(coords), sizeof(gps_t), 100 / portTICK_PERIOD_MS);

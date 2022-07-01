@@ -148,6 +148,10 @@ static void loraTask(void *pvParameter)
             else if(rx_index == compressed_map_index && length == 128) {
               printf("Appending map at %d\n", compressed_map_index*125);
               memcpy(&compressed_map[compressed_map_index*125], &data[3], length-3); //Length - 3 to skip index + ID
+
+              rx_frame_amount++;
+              currentSyncPercentage = ceil((float)100 * (float)rx_frame_amount) / (float)frame_amount;
+             
               uint8_t ack[3] = {0x03, 0,0};
               memcpy(&ack[1], &compressed_map_index, 2);
               printf("Sending ACK %d\n", compressed_map_index);
@@ -210,7 +214,11 @@ static void statsTask(void* pvParameter) {
       lv_label_set_text_fmt(menu_screen->lbl_time, "Time: 0:0");
     }
     lv_label_set_text_fmt(menu_screen->lbl_depth, "Depth: %dm", getCurrentDepth());
-    lv_label_set_text_fmt(menu_screen->lbl_battery, "Battery: %d%%", 100);
+    if(isSyncing) {
+    lv_label_set_text_fmt(menu_screen->lbl_sync, "Syncing: %d%%", currentSyncPercentage);
+    } else {
+      lv_label_set_text(menu_screen->lbl_sync, "");
+    }
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 }
