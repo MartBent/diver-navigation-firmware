@@ -44,7 +44,7 @@ static void loraTask(void *pvParameter)
     uint8_t data[128] = {};
     uint8_t length = lora_receive(data);
     if(length > 1) {
-      printf("RX lora %d \n", length);
+      printf("RX lora %d Header: %d \n",length, data[0]);
       switch(data[0]) {
         case 0: {
           if(!isSyncing) {
@@ -65,12 +65,11 @@ static void loraTask(void *pvParameter)
           break;
         }
         case 72: {
-          if(!isSyncing) {
-            GpsMessage* msg = malloc(sizeof(GpsMessage));
-            decodeGpsMessage(data, msg);
-            processGpsMessage(msg, false);
-            free(msg);
-          }
+          GpsMessage* msg = malloc(sizeof(GpsMessage));
+          decodeGpsMessage(data, msg);
+          printf("Received fav location: %0.5f, %0.5f\n", msg->latitude, msg->longitude);
+          processGpsMessage(msg, false);
+          free(msg);
           break;
         }
         case 2: {
